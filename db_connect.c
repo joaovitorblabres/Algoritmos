@@ -182,6 +182,7 @@ int insert(PGconn *conn, struct pessoa *dadosCliente, int *i){ //inserção no b
 }
 
 void separa_nome(char *nome, int tamanho, struct pessoa *dadosCliente, int *l){
+	tratamento(nome,tamanho);
 	int i, k=0, pos_primeiro, pos_ultimo, cont=0;
 	for(i=0;i<tamanho;i++){
 		if(nome[i] == 32){
