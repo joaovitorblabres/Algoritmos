@@ -191,10 +191,19 @@ void separa_nome(char *nome, int tamanho, struct pessoa *dadosCliente, int *l){
 			pos_ultimo = i;
 		}
 	}
-	for(i=0;i<pos_primeiro;i++){
-		(*(dadosCliente+*l)).primeiro_nome[i] = nome[i];
-	}
-	for(i=(pos_ultimo+1);i<tamanho;i++,k++){
-		(*(dadosCliente+*l)).ultimo_nome[k] = nome[i];
+	if(cont == 0){
+		for(i=0;i<tamanho;i++){
+			(*(dadosCliente+*l)).primeiro_nome[i] = nome[i];
+		}
+		printf("Informe o último nome do usuário: ");
+		fgets((*(dadosCliente+*l)).ultimo_nome,100,stdin);
+		(*(dadosCliente+*l)).ultimo_nome[strlen((*(dadosCliente+*l)).ultimo_nome)-1] = '\0';
+	}else{
+		for(i=0;i<pos_primeiro;i++){
+			(*(dadosCliente+*l)).primeiro_nome[i] = nome[i];
+		}
+		for(i=(pos_ultimo+1);i<tamanho;i++,k++){
+			(*(dadosCliente+*l)).ultimo_nome[k] = nome[i];
+		}
 	}
 }

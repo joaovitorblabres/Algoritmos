@@ -1,9 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-int form();
+int form_login();
 
-int form(){
+int form_login(){
 	char login[100];
 	char senha[100];
 
