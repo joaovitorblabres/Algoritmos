@@ -9,6 +9,7 @@ struct pessoa{
 	char ultimo_nome[100];
 	char login[100];
 	char senha[100];
+	char CPF[100];
 };
 
 void do_exit(PGconn *conn, PGresult *res);
@@ -23,8 +24,10 @@ int login(char *login, char *senha);
 int insert(PGconn *conn, struct pessoa *dadosCliente, int *i);
 void form_include_usuario();
 void separa_nome(char *nome, int tamanho, struct pessoa *dadosCliente, int *l);
+int valida_cpf(char *cpf, int tamanho);
 
-void tratamento(char *ent, int tam){ //tratamento de string para evitar sql injection
+//tratamento de string para evitar sql injection
+void tratamento(char *ent, int tam){ 
 	int i;
 	for(i=0;i<tam;i++){
 		if(ent[i] == 39){ //verifica se contém aspas simples e substitui por espaço
@@ -145,24 +148,34 @@ void editar(PGconn *conn, int receb){ //inserção no banco de dados
 void form_include_usuario(){ // form para incluir usuários
 	PGconn *conn = PQconnectdb(STR_CON); //cria conexão com banco de dados
 	char nome[500];
-	int i=0;
+	int i=0, ok = 1;
 	struct pessoa pessoas[1000];
-	printf("Informe o nome: ");
+	printf("\n");
+	printf("+Informe o nome: ");
 	fgets(nome,500,stdin);
 	nome[strlen(nome)-1] = '\0';
 	separa_nome(nome,strlen(nome),pessoas,&i);
 
-	printf("Informe um login para o usuário \"%s\": ",pessoas[i].primeiro_nome);
+	printf("+Informe um login para o usuário \"%s\": ",pessoas[i].primeiro_nome);
 	fgets(pessoas[i].login,100,stdin);		
 	pessoas[i].login[strlen(pessoas[i].login)-1] = '\0';
-	tratamento(pessoas[i].login,strlen(pessoas[i].login)); //trata strings
+	tratamento(pessoas[i].login,strlen(pessoas[i].login));
 
-	printf("Informe uma senha para o usuário \"%s\": ",pessoas[i].primeiro_nome);
+	printf("+Informe uma senha para o usuário \"%s\": ",pessoas[i].primeiro_nome);
 	fgets(pessoas[i].senha,100,stdin);
 	pessoas[i].senha[strlen(pessoas[i].senha)-1] = '\0';
 	tratamento(pessoas[i].senha,strlen(pessoas[i].senha)); //trata strings
 
-	insert(conn,pessoas,&i); // chama função para inserir no banco
+	while(ok){
+		printf("+Informe o CPF: ");
+		fgets(pessoas[i].CPF,100,stdin);
+		pessoas[i].CPF[strlen(pessoas[i].CPF)-1] = '\0';
+		ok = valida_cpf(pessoas[i].CPF,strlen(pessoas[i].CPF));
+		if(!ok)
+			printf("+CPF inválido!");
+	}
+
+	//insert(conn,pessoas,&i); // chama função para inserir no banco
 	i++;
 }
 
@@ -196,7 +209,7 @@ void separa_nome(char *nome, int tamanho, struct pessoa *dadosCliente, int *l){
 		for(i=0;i<tamanho;i++){
 			(*(dadosCliente+*l)).primeiro_nome[i] = nome[i];
 		}
-		printf("Informe o último nome do usuário: ");
+		printf("+Informe o último nome do usuário: ");
 		fgets((*(dadosCliente+*l)).ultimo_nome,100,stdin);
 		(*(dadosCliente+*l)).ultimo_nome[strlen((*(dadosCliente+*l)).ultimo_nome)-1] = '\0';
 	}else{
@@ -207,4 +220,68 @@ void separa_nome(char *nome, int tamanho, struct pessoa *dadosCliente, int *l){
 			(*(dadosCliente+*l)).ultimo_nome[k] = nome[i];
 		}
 	}
+}
+
+int valida_cpf(char *cpf, int tamanho){
+	int num[11], i,k=0, multiplica = 0, resto, verificador[2];
+	for(i=0;i<tamanho;i++,k++){
+		switch(num[i]){
+			case '0':
+				num[k] = 0;
+				break;
+			case '1':
+				num[k] = 1;
+				break;
+			case '2':
+				num[k] = 2;
+				break;
+			case '3':
+				num[k] = 3;
+				break;
+			case '4':
+				num[k] = 4;
+				break;
+			case '5':
+				num[k] = 5;
+				break;
+			case '6':
+				num[k] = 6;
+				break;
+			case '7':
+				num[k] = 7;
+				break;
+			case '8':
+				num[k] = 8;
+				break;
+			case '9':
+				num[k] = 9;
+				break;
+			default:
+				break;
+		}
+	}
+	//primeiro dígito verificador
+	multiplica=0;
+	for(i=10;i>1;i--){
+		multiplica += num[i]*i;
+	}
+	resto = multiplica % 11;
+	if(resto>=2)
+		verificador[0] = 11 - resto;
+	else
+		verificador[0] = 0;
+	//segundo dígito verificador
+	multiplica=0;
+	for(i=11;i>1;i--){
+		multiplica += num[i]*i;
+	}
+	resto = multiplica % 11;
+	if(resto>=2)
+		verificador[1] = 11 - resto;
+	else
+		verificador[1] = 0;
+	if(verificador[0] == num[9] && verificador[1] == num[10])
+		return (1);
+	else
+		return (0);
 }
