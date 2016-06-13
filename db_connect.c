@@ -148,7 +148,11 @@ int login(char *login, char *senha){ // verificação de login
 void form_include_usuario(){ // form para incluir usuários
 	PGconn *conn = PQconnectdb(STR_CON); //cria conexão com banco de dados
 	char nome[500];
+<<<<<<< HEAD
 	int i=0, ok = 0;
+=======
+	int i=0, ok = 1;
+>>>>>>> 01ddb6820b24f7de0c6eee691ee604181094397b
 	struct pessoa pessoas[1000];
 	printf("\n");
 	printf("+Informe o nome: ");
@@ -166,16 +170,27 @@ void form_include_usuario(){ // form para incluir usuários
 	pessoas[i].senha[strlen(pessoas[i].senha)-1] = '\0';
 	tratamento(pessoas[i].senha,strlen(pessoas[i].senha)); //trata strings
 
+<<<<<<< HEAD
 	do{
+=======
+	while(ok){
+>>>>>>> 01ddb6820b24f7de0c6eee691ee604181094397b
 		printf("+Informe o CPF: ");
 		fgets(pessoas[i].CPF,100,stdin);
 		pessoas[i].CPF[strlen(pessoas[i].CPF)-1] = '\0';
 		ok = valida_cpf(pessoas[i].CPF,strlen(pessoas[i].CPF));
 		if(!ok)
+<<<<<<< HEAD
 			printf("+CPF inválido!\n");
 	}while(!ok);
 
 	insert(conn,pessoas,&i); // chama função para inserir no banco
+=======
+			printf("+CPF inválido!");
+	}
+
+	//insert(conn,pessoas,&i); // chama função para inserir no banco
+>>>>>>> 01ddb6820b24f7de0c6eee691ee604181094397b
 	i++;
 }
 
@@ -223,6 +238,7 @@ void separa_nome(char *nome, int tamanho, struct pessoa *dadosCliente, int *l){
 }
 
 int valida_cpf(char *cpf, int tamanho){
+<<<<<<< HEAD
 	int num[11],j,i,k=0, multiplica = 0, resto, verificador[2];
 	for(i=0;i<tamanho;i++){
 		switch(cpf[i]){
@@ -265,11 +281,46 @@ int valida_cpf(char *cpf, int tamanho){
 			case '9':
 				num[k] = 9;
 				k++;
+=======
+	int num[11], i,k=0, multiplica = 0, resto, verificador[2];
+	for(i=0;i<tamanho;i++,k++){
+		switch(num[i]){
+			case '0':
+				num[k] = 0;
+				break;
+			case '1':
+				num[k] = 1;
+				break;
+			case '2':
+				num[k] = 2;
+				break;
+			case '3':
+				num[k] = 3;
+				break;
+			case '4':
+				num[k] = 4;
+				break;
+			case '5':
+				num[k] = 5;
+				break;
+			case '6':
+				num[k] = 6;
+				break;
+			case '7':
+				num[k] = 7;
+				break;
+			case '8':
+				num[k] = 8;
+				break;
+			case '9':
+				num[k] = 9;
+>>>>>>> 01ddb6820b24f7de0c6eee691ee604181094397b
 				break;
 			default:
 				break;
 		}
 	}
+<<<<<<< HEAD
 	for(k=0;k<2;k++){
 		j=0;
 		multiplica=0;
@@ -282,6 +333,28 @@ int valida_cpf(char *cpf, int tamanho){
 		else
 			verificador[k] = 0;
 	}
+=======
+	//primeiro dígito verificador
+	multiplica=0;
+	for(i=10;i>1;i--){
+		multiplica += num[i]*i;
+	}
+	resto = multiplica % 11;
+	if(resto>=2)
+		verificador[0] = 11 - resto;
+	else
+		verificador[0] = 0;
+	//segundo dígito verificador
+	multiplica=0;
+	for(i=11;i>1;i--){
+		multiplica += num[i]*i;
+	}
+	resto = multiplica % 11;
+	if(resto>=2)
+		verificador[1] = 11 - resto;
+	else
+		verificador[1] = 0;
+>>>>>>> 01ddb6820b24f7de0c6eee691ee604181094397b
 	if(verificador[0] == num[9] && verificador[1] == num[10])
 		return (1);
 	else

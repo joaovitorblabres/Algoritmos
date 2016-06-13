@@ -5,7 +5,11 @@
 int form_login();
 
 int form_login(){
+<<<<<<< HEAD
 	char usuario[100];
+=======
+	char login[100];
+>>>>>>> 01ddb6820b24f7de0c6eee691ee604181094397b
 	char senha[100];
 	int espera,i;
 	do{	
