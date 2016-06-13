@@ -9,6 +9,7 @@ struct pessoa{
 	char ultimo_nome[100];
 	char login[100];
 	char senha[100];
+	char CPF[100];
 };
 
 void do_exit(PGconn *conn, PGresult *res);
@@ -23,8 +24,10 @@ int login(char *login, char *senha);
 int insert(PGconn *conn, struct pessoa *dadosCliente, int *i);
 void form_include_usuario();
 void separa_nome(char *nome, int tamanho, struct pessoa *dadosCliente, int *l);
+int valida_cpf(char *cpf, int tamanho);
 
-void tratamento(char *ent, int tam){ //tratamento de string para evitar sql injection
+//tratamento de string para evitar sql injection
+void tratamento(char *ent, int tam){ 
 	int i;
 	for(i=0;i<tam;i++){
 		if(ent[i] == 39){ //verifica se contém aspas simples e substitui por espaço
@@ -43,7 +46,7 @@ void do_exit(PGconn *conn, PGresult *res) { //retorna erro de conexão
     fprintf(stderr, "%s\n", PQerrorMessage(conn));    
 
     PQclear(res);
-    PQfinish(conn);    
+    PQfinish(conn);
     
     exit(1);
 }
@@ -90,7 +93,7 @@ void select(PGconn *conn){
 	printf("+%*d registros encontrados:\n",3,rows);
 	if(rows){
 		for(int i=0; i<rows; i++) {
-			printf("+%*s | %s | %s | %s | %s\n",3, PQgetvalue(res, i, 1), PQgetvalue(res, i, 0), PQgetvalue(res, i, 4), PQgetvalue(res, i, 2), PQgetvalue(res, i, 3));
+			printf("+%*s | %s | %s | %s | %s | %s\n",3, PQgetvalue(res, i, 1), PQgetvalue(res, i, 0), PQgetvalue(res, i, 4), PQgetvalue(res, i, 2), PQgetvalue(res, i, 3), PQgetvalue(res, i, 5));
 		}    
 	}
 
@@ -129,38 +132,48 @@ void editar(PGconn *conn, int receb){ //inserção no banco de dados
 	}
 }
 
-/*int login(char *login, char *senha){ // verificação de login
-	PGresult *res = PQexec(conn, "SELECT * FROM pessoa ORDER BY idpessoa");
+int login(char *login, char *senha){ // verificação de login
+	PGconn *conn = PQconnectdb(STR_CON);
+	char str_login[500];
+	sprintf(str_login,"SELECT * from pessoa where \"login\" = '%s' AND \"senha\" = '%s'", login, senha);
+	PGresult *res = PQexec(conn,str_login);
 	int rows = PQntuples(res);
-	printf("+%*d registros encontrados:\n",3,rows);
 	if(rows){
-		for(int i=0; i<rows; i++) {
-			printf("+%*s | %s\n",3, PQgetvalue(res, i, 1), PQgetvalue(res, i, 0));
-		}    
-	}
-	
-}*/
+		return (1);
+	}else
+		return (0);
+}
 
 //----------------------------------------------------------------------------inserção de usuários
 void form_include_usuario(){ // form para incluir usuários
 	PGconn *conn = PQconnectdb(STR_CON); //cria conexão com banco de dados
 	char nome[500];
-	int i=0;
+	int i=0, ok = 0;
 	struct pessoa pessoas[1000];
-	printf("Informe o nome: ");
+	printf("\n");
+	printf("+Informe o nome: ");
 	fgets(nome,500,stdin);
 	nome[strlen(nome)-1] = '\0';
 	separa_nome(nome,strlen(nome),pessoas,&i);
 
-	printf("Informe um login para o usuário \"%s\": ",pessoas[i].primeiro_nome);
+	printf("+Informe um login para o usuário \"%s\": ",pessoas[i].primeiro_nome);
 	fgets(pessoas[i].login,100,stdin);		
 	pessoas[i].login[strlen(pessoas[i].login)-1] = '\0';
-	tratamento(pessoas[i].login,strlen(pessoas[i].login)); //trata strings
+	tratamento(pessoas[i].login,strlen(pessoas[i].login));
 
-	printf("Informe uma senha para o usuário \"%s\": ",pessoas[i].primeiro_nome);
+	printf("+Informe uma senha para o usuário \"%s\": ",pessoas[i].primeiro_nome);
 	fgets(pessoas[i].senha,100,stdin);
 	pessoas[i].senha[strlen(pessoas[i].senha)-1] = '\0';
 	tratamento(pessoas[i].senha,strlen(pessoas[i].senha)); //trata strings
+
+	do{
+		printf("+Informe o CPF: ");
+		fgets(pessoas[i].CPF,100,stdin);
+		pessoas[i].CPF[strlen(pessoas[i].CPF)-1] = '\0';
+		ok = valida_cpf(pessoas[i].CPF,strlen(pessoas[i].CPF));
+		if(!ok)
+			printf("+CPF inválido!\n");
+	}while(!ok);
 
 	insert(conn,pessoas,&i); // chama função para inserir no banco
 	i++;
@@ -170,7 +183,7 @@ int insert(PGconn *conn, struct pessoa *dadosCliente, int *i){ //inserção no b
 	if(PQstatus(conn) != CONNECTION_BAD){
 		PGresult *res;
 		char insert[500];
-		sprintf(insert,"INSERT INTO pessoa (\"Primeiro_Nome\",\"Ultimo_Nome\",\"login\",\"senha\") VALUES('%s','%s','%s','%s')", (*(dadosCliente+*i)).primeiro_nome, (*(dadosCliente+*i)).ultimo_nome, (*(dadosCliente+*i)).login, (*(dadosCliente+*i)).senha);
+		sprintf(insert,"INSERT INTO pessoa (\"Primeiro_Nome\",\"Ultimo_Nome\",\"login\",\"senha\",\"CPF\") VALUES('%s','%s','%s','%s','%s')", (*(dadosCliente+*i)).primeiro_nome, (*(dadosCliente+*i)).ultimo_nome, (*(dadosCliente+*i)).login, (*(dadosCliente+*i)).senha,(*(dadosCliente+*i)).CPF);
 		res = PQexec(conn, insert);
 		if (PQresultStatus(res) != PGRES_COMMAND_OK) 
 			do_exit(conn, res);
@@ -182,6 +195,7 @@ int insert(PGconn *conn, struct pessoa *dadosCliente, int *i){ //inserção no b
 }
 
 void separa_nome(char *nome, int tamanho, struct pessoa *dadosCliente, int *l){
+	tratamento(nome,tamanho);
 	int i, k=0, pos_primeiro, pos_ultimo, cont=0;
 	for(i=0;i<tamanho;i++){
 		if(nome[i] == 32){
@@ -191,10 +205,85 @@ void separa_nome(char *nome, int tamanho, struct pessoa *dadosCliente, int *l){
 			pos_ultimo = i;
 		}
 	}
-	for(i=0;i<pos_primeiro;i++){
-		(*(dadosCliente+*l)).primeiro_nome[i] = nome[i];
+	if(cont == 0){
+		for(i=0;i<tamanho;i++){
+			(*(dadosCliente+*l)).primeiro_nome[i] = nome[i];
+		}
+		printf("+Informe o último nome do usuário: ");
+		fgets((*(dadosCliente+*l)).ultimo_nome,100,stdin);
+		(*(dadosCliente+*l)).ultimo_nome[strlen((*(dadosCliente+*l)).ultimo_nome)-1] = '\0';
+	}else{
+		for(i=0;i<pos_primeiro;i++){
+			(*(dadosCliente+*l)).primeiro_nome[i] = nome[i];
+		}
+		for(i=(pos_ultimo+1);i<tamanho;i++,k++){
+			(*(dadosCliente+*l)).ultimo_nome[k] = nome[i];
+		}
 	}
-	for(i=(pos_ultimo+1);i<tamanho;i++,k++){
-		(*(dadosCliente+*l)).ultimo_nome[k] = nome[i];
+}
+
+int valida_cpf(char *cpf, int tamanho){
+	int num[11],j,i,k=0, multiplica = 0, resto, verificador[2];
+	for(i=0;i<tamanho;i++){
+		switch(cpf[i]){
+			case '0':
+				num[k] = 0;
+				k++;
+				break;
+			case '1':
+				num[k] = 1;
+				k++;
+				break;
+			case '2':
+				num[k] = 2;
+				k++;
+				break;
+			case '3':
+				num[k] = 3;
+				k++;
+				break;
+			case '4':
+				num[k] = 4;
+				k++;
+				break;
+			case '5':
+				num[k] = 5;
+				k++;
+				break;
+			case '6':
+				num[k] = 6;
+				k++;
+				break;
+			case '7':
+				num[k] = 7;
+				k++;
+				break;
+			case '8':
+				num[k] = 8;
+				k++;
+				break;
+			case '9':
+				num[k] = 9;
+				k++;
+				break;
+			default:
+				break;
+		}
 	}
+	for(k=0;k<2;k++){
+		j=0;
+		multiplica=0;
+		for(i=(10+k);i>1;i--,j++){
+			multiplica += num[j]*i;
+		}
+		resto = multiplica % 11;
+		if(resto>=2)
+			verificador[k] = 11 - resto;
+		else
+			verificador[k] = 0;
+	}
+	if(verificador[0] == num[9] && verificador[1] == num[10])
+		return (1);
+	else
+		return (0);
 }

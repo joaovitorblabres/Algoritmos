@@ -16,9 +16,9 @@ void risco(){
 }
 
 void opcao(){
-	printf("+\t\tSISTEMA ANDERSON E JOÃO\n");
+	printf("+\t\tROOT - SISTEMA ANDERSON E JOÃO\n");
 	risco();
-	printf("+\tEscolha a opção:\n+\t1 - INSERIR NOVO USUÁRIO\n+\t2 - SELECT\n+\t3 - UPDATE\n+\t4 - DELETE\n+\t0 - SAIR\n");
+	printf("+\tEscolha a opção:\n+\t1 - INSERIR NOVO USUÁRIO\n+\t2 - USUÁRIOS\n+\t3 - ATUALIZAR USUÁRIOS\n+\t4 - DELETAR USUÁRIOS\n+\t0 - SAIR\n");
 	printf("+ ");
 }
 
