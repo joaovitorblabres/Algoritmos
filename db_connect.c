@@ -91,9 +91,10 @@ void select(PGconn *conn){
 	PGresult *res = PQexec(conn, "SELECT * FROM pessoa ORDER BY idpessoa");    
 	int rows = PQntuples(res);
 	printf("+%*d registros encontrados:\n",3,rows);
+	printf("+ ID |        Primeiro Nome |          Ultimo Nome |              Usuario |      Senha |            CPF\n");
 	if(rows){
 		for(int i=0; i<rows; i++) {
-			printf("+%*s | %s | %s | %s | %s | %s\n",3, PQgetvalue(res, i, 1), PQgetvalue(res, i, 0), PQgetvalue(res, i, 4), PQgetvalue(res, i, 2), PQgetvalue(res, i, 3), PQgetvalue(res, i, 5));
+			printf("+%*s | %*s | %*s | %*s | %*s | %*s\n",3, PQgetvalue(res, i, 1), 20, PQgetvalue(res, i, 0), 20, PQgetvalue(res, i, 4), 20, PQgetvalue(res, i, 2), 10, PQgetvalue(res, i, 3), 15, PQgetvalue(res, i, 5));
 		}    
 	}
 
@@ -113,7 +114,7 @@ int apagar(PGconn *conn, int receb){
 	}
 }
 
-void editar(PGconn *conn, int receb){ //inserção no banco de dados
+void editar(PGconn *conn, int receb){ //edição do nome no banco de dados
 	if(PQstatus(conn) != CONNECTION_BAD){
 		char str_up[500];
 		char altera[500];
@@ -160,11 +161,16 @@ void form_include_usuario(){ // form para incluir usuários
 	fgets(pessoas[i].login,100,stdin);		
 	pessoas[i].login[strlen(pessoas[i].login)-1] = '\0';
 	tratamento(pessoas[i].login,strlen(pessoas[i].login));
-
-	printf("+Informe uma senha para o usuário \"%s\": ",pessoas[i].primeiro_nome);
-	fgets(pessoas[i].senha,100,stdin);
-	pessoas[i].senha[strlen(pessoas[i].senha)-1] = '\0';
-	tratamento(pessoas[i].senha,strlen(pessoas[i].senha)); //trata strings
+	
+	do{
+		printf("+Informe uma senha (até 6 caracteres) para o usuário \"%s\": ",pessoas[i].primeiro_nome);
+		fgets(pessoas[i].senha,100,stdin);
+		pessoas[i].senha[strlen(pessoas[i].senha)-1] = '\0';
+		tratamento(pessoas[i].senha,strlen(pessoas[i].senha)); //trata strings
+		if(strlen(pessoas[i].senha)>6 || strlen(pessoas[i].senha) < 1){
+			printf("Senha foram da quantidade máxima de caracteres\n");
+		}
+	}while(strlen(pessoas[i].senha) > 6);
 
 	do{
 		printf("+Informe o CPF: ");
