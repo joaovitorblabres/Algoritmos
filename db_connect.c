@@ -18,7 +18,10 @@ void select(PGconn *conn);
 int apagar(PGconn *conn, int receb);
 void editar(PGconn *conn, int receb);
 void tratamento(char *ent, int tam);
+
+// declaração de login
 int login(char *login, char *senha);
+char nv_login(char *login, char *senha);
 
 // declaração de funções para inserção
 int insert(PGconn *conn, struct pessoa *dadosCliente, int *i);
@@ -132,17 +135,27 @@ void editar(PGconn *conn, int receb){ //edição do nome no banco de dados
 		PQclear(res);
 	}
 }
-
-int login(char *login, char *senha){ // verificação de login
+//----------------------------------------------------------------------------verificação de login
+int login(char *login, char *senha){ 
 	PGconn *conn = PQconnectdb(STR_CON);
 	char str_login[500];
 	sprintf(str_login,"SELECT * from pessoa where \"login\" = '%s' AND \"senha\" = '%s'", login, senha);
 	PGresult *res = PQexec(conn,str_login);
 	int rows = PQntuples(res);
-	if(rows){
+	if(rows)
 		return (1);
-	}else
+	else
 		return (0);
+}
+
+char nv_login(char *login, char *senha){ 
+	PGconn *conn = PQconnectdb(STR_CON);
+	char str_login[500];
+	char lvl[100];
+	sprintf(str_login,"SELECT fl_lvl from pessoa where \"login\" = '%s' AND \"senha\" = '%s'", login, senha);
+	PGresult *res = PQexec(conn,str_login);
+	sprintf(lvl,"%s",PQgetvalue(res, 0, 0));
+	return (*lvl);
 }
 
 //----------------------------------------------------------------------------inserção de usuários
@@ -200,7 +213,7 @@ int insert(PGconn *conn, struct pessoa *dadosCliente, int *i){ //inserção no b
 	}
 }
 
-void separa_nome(char *nome, int tamanho, struct pessoa *dadosCliente, int *l){
+void separa_nome(char *nome, int tamanho, struct pessoa *dadosCliente, int *l){ //separa primeiro e ultimo nome
 	tratamento(nome,tamanho);
 	int i, k=0, pos_primeiro, pos_ultimo, cont=0;
 	for(i=0;i<tamanho;i++){

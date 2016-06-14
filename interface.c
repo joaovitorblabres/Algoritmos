@@ -3,7 +3,10 @@
 #include <string.h>
 #define TAM_T 50
 
-void opcao();
+void root();
+void root_menu();
+void user();
+void user_menu();
 void risco();
 void continua();
 
@@ -15,10 +18,71 @@ void risco(){
 	printf("+\n");
 }
 
-void opcao(){
-	printf("+\t\tROOT - SISTEMA ANDERSON E JOÃO\n");
+
+//-----------------------------------------------------------------------ROOT
+void root_menu(){
+	printf("+\tROOT - SISTEMA ANDERSON E JOÃO\n");
 	risco();
 	printf("+\tEscolha a opção:\n+\t1 - INSERIR NOVO USUÁRIO\n+\t2 - USUÁRIOS\n+\t3 - ATUALIZAR USUÁRIOS\n+\t4 - DELETAR USUÁRIOS\n+\t0 - SAIR\n");
+	printf("+ ");
+}
+
+void root(){
+	root_menu();
+	int escolha;
+	while(scanf("%d",&escolha),escolha){
+		getchar();
+		switch(escolha){
+			case 1:
+			case 2:
+			case 3:
+			case 4:
+				system("clear");
+				comandos(escolha);
+				continua();
+				system("clear");
+				root_menu();
+				break;
+			default:
+				system("clear");
+				printf("+ Opção inválida\n");
+				root_menu();
+				break;
+		}
+		escolha=0;
+	}
+}
+
+//-----------------------------------------------------------------------USER COMUM
+void user(){
+	user_menu();
+	int escolha;
+	while(scanf("%d",&escolha),escolha){
+		getchar();
+		switch(escolha){
+			case 1:
+			case 2:
+			case 3:
+				system("clear");
+				comandos(escolha);
+				continua();
+				system("clear");
+				user_menu();
+				break;
+			default:
+				system("clear");
+				printf("+ Opção inválida\n");
+				user_menu();
+				break;
+		}
+		escolha=0;
+	}
+}
+
+void user_menu(){
+	printf("+\t\tSISTEMA ANDERSON E JOÃO\n");
+	risco();
+	printf("+\tEscolha a opção:\n+\t1 - REALIZAR PAGAMENTO\n+\t2 - INFORMAÇÕES\n+\t3 - ATUALIZAR DADOS\n+\t0 - SAIR\n");
 	printf("+ ");
 }
 

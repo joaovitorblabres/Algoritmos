@@ -1,8 +1,16 @@
 #include <stdlib.h>
 #include <stdio.h>
- #include <unistd.h>
+#include <unistd.h>
 
 int form_login();
+int checa(char lvl);
+
+int checa(char lvl){
+	if(lvl == 48)
+		return (0);
+	else
+		return (1);
+}
 
 int form_login(){
 	char usuario[100];
@@ -22,7 +30,10 @@ int form_login(){
 			printf("Usuário ou senha incorretos\n");
 		}else{
 			system("clear");
-			return (1);
+			if(!checa(nv_login(usuario,senha)))
+				root();
+			else
+				user();
 		}
 	}while(!login(usuario,senha));
 }
