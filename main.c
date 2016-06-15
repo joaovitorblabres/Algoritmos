@@ -6,35 +6,19 @@
 
 int main(){
 	system("clear");
-	if(form_login()){
-		int escolha;
-		opcao();
-		while(scanf("%d",&escolha),escolha){
-			getchar();
-			switch(escolha){
-				case 1:
-				case 2:
-				case 3:
-				case 4:
-					system("clear");
-					comandos(escolha);
-					continua();
-					system("clear");
-					opcao();
-					break;
-				default:
-					system("clear");
-					printf("+ Opção inválida\n");
-					opcao();
-					break;
-			}
-			escolha=0;
-		}
-	}
+	form_login();
 }
+
 /*
-CREATE TABLE pessoa(
-  "Nome" character varying(500),
+TABLE PARA TESTES
+CREATE TABLE pessoa
+(
+  "Primeiro_Nome" character varying(100),
   idpessoa serial NOT NULL,
+  login character varying(100),
+  senha character varying(100),
+  "Ultimo_Nome" character varying(100),
+  "CPF" character varying(20),
+  fl_lvl integer,
   CONSTRAINT idpessoa PRIMARY KEY (idpessoa)
-);*/
+)*/
