@@ -81,22 +81,26 @@ int comandos(int esc){ //comandos para conexão com banco de dados
 				if(ins_conta){
 					form_include_conta();
 				}
+				getchar();
 				break;
 			case 2:
 				select_pessoa(conn);
 				break;
 			case 3:
 				select_pessoa(conn);
-				printf("\nInforme o ID que você quer editar: ");
+				printf("\nInforme o ID que você quer editar (0 = CANCELAR): ");
 				scanf("%d",&up_id);
-				editar(conn, up_id);
+				getchar();
+				if(up_id)
+					editar(conn, up_id);
 				break;
 			case 4:
 				select_pessoa(conn);
-				printf("\nInforme o ID que você quer apagar: ");
+				printf("\nInforme o ID que você quer apagar (0 = CANCELAR): ");
 				scanf("%d",&del_id);
-				apagar(conn, del_id);
 				getchar();
+				if(del_id)
+					apagar(conn, del_id);
 				break;
 			default:
 				printf("Opção inválida");
@@ -107,18 +111,16 @@ int comandos(int esc){ //comandos para conexão com banco de dados
 }
 
 void select_pessoa(PGconn *conn){
-	PGresult *res = PQexec(conn, "SELECT * FROM pessoa ORDER BY idpessoa");    
+	PGresult *res = PQexec(conn, "SELECT * FROM pessoa full join conta on idpessoa = pessoa_idpessoa ORDER BY idpessoa");    
 	int rows = PQntuples(res);
 	printf("+%*d registros encontrados:\n",3,rows);
-	printf("+ ID |        Primeiro Nome |          Ultimo Nome |            CPF\n");
+	printf("+ ID |        Primeiro Nome |          Ultimo Nome |             CPF | Conta |  Senha |      Saldo |     Limite | Nivel\n");
 	if(rows){
 		for(int i=0; i<rows; i++) {
-			printf("+%*s | %*s | %*s | %*s\n",3, PQgetvalue(res, i, 0), 20, PQgetvalue(res, i, 1), 20, PQgetvalue(res, i, 3), 15, PQgetvalue(res, i, 2));	
+			printf("+%*s | %*s | %*s | %*s | %s | %s | %*s | %*s | %s\n",3, PQgetvalue(res, i, 0), 20, PQgetvalue(res, i, 1), 20, PQgetvalue(res, i, 3), 15, PQgetvalue(res, i, 2), PQgetvalue(res, i, 6), PQgetvalue(res, i, 7), 10, PQgetvalue(res, i, 8), 10, PQgetvalue(res, i, 9), PQgetvalue(res, i, 10));
 		}    
 	}
 }
-
-//              Usuario |      Senha | %*s | %*s , 20, PQgetvalue(res, i, 2), 10, PQgetvalue(res, i, 3) 
 
 int apagar(PGconn *conn, int receb){
 	if(PQstatus(conn) != CONNECTION_BAD){
@@ -144,7 +146,7 @@ void editar(PGconn *conn, int receb){ //edição do nome no banco de dados
 		fgets(altera,500,stdin);
 		altera[strlen(altera)-1] = '\0';
 		tratamento(altera,strlen(altera)); //trata strings
-		sprintf(str_up,"UPDATE pessoa SET \"Primeiro_Nome\" = '%s' WHERE idpessoa = %d", altera, receb);
+		sprintf(str_up,"UPDATE pessoa SET \"primeiro_nome\" = '%s' WHERE idpessoa = %d", altera, receb);
 		PGresult *res = PQexec(conn, str_up);
 		if (PQresultStatus(res) != PGRES_COMMAND_OK) 
 			do_exit(conn, res);
