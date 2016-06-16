@@ -1,2 +1,1 @@
-gcc -o connect db_connect.c -I/usr/include/postgresql -lpq -std=c99
 gcc -o main main.c -I/usr/include/postgresql -lpq -std=c99
