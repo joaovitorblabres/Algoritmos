@@ -202,6 +202,7 @@ void form_include_usuario(){ // form para incluir usuários
 	insert_pessoa(conn,pessoas,&i); // chama função para inserir no banco
 	i++;
 }
+
 char id[10];
 int insert_pessoa(PGconn *conn, struct pessoa *dadosCliente, int *i){ //inserção no banco de dados
 	if(PQstatus(conn) != CONNECTION_BAD){
@@ -302,55 +303,15 @@ void separa_nome(char *nome, int tamanho, struct pessoa *dadosCliente, int *l){
 			(*(dadosCliente+*l)).ultimo_nome[k] = nome[i];
 		}
 	}
+	*l++;
 }
 
 int valida_cpf(char *cpf, int tamanho){
 	int num[11],j,i,k=0, multiplica = 0, resto, verificador[2];
 	for(i=0;i<tamanho;i++){
-		switch(cpf[i]){
-			case '0':
-				num[k] = 0;
-				k++;
-				break;
-			case '1':
-				num[k] = 1;
-				k++;
-				break;
-			case '2':
-				num[k] = 2;
-				k++;
-				break;
-			case '3':
-				num[k] = 3;
-				k++;
-				break;
-			case '4':
-				num[k] = 4;
-				k++;
-				break;
-			case '5':
-				num[k] = 5;
-				k++;
-				break;
-			case '6':
-				num[k] = 6;
-				k++;
-				break;
-			case '7':
-				num[k] = 7;
-				k++;
-				break;
-			case '8':
-				num[k] = 8;
-				k++;
-				break;
-			case '9':
-				num[k] = 9;
-				k++;
-				break;
-			default:
-				break;
-		}
+		num[k] = cpf[i] - '0';
+		if(num[k] >= 0 && num[k] <= 9)
+			k++;
 	}
 	for(k=0;k<2;k++){
 		j=0;

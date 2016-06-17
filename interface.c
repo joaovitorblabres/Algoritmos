@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "login.c"
 #define TAM_T 50
 
 void root();
@@ -17,8 +16,7 @@ void acesso(){
 	printf("\t\t / \\ / \\ / \\ / \\ / \\ / \\  \n");
 	printf("\t\t( N | u | B | a | n | k ) \n");
 	printf("\t\t \\_/ \\_/ \\_/ \\_/ \\_/ \\_/  \n");
-  	printf("\n");                             
-	form_login();
+  	printf("\n");
 }
                                      
 
