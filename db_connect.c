@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <postgresql/libpq-fe.h>
+#include <libpq-fe.h>
 #define STR_CON "user=postgres password=postgres dbname=nubank"
 
 struct pessoa{
@@ -37,7 +37,7 @@ int valida_cpf(char *cpf, int tamanho);
 
 void form_include_conta();
 int insert_conta(PGconn *conn, struct conta *contas, int *i);
-void gera_numero(struct conta *contas, int *i); // FAZER ===========================================================+>>>>>> ANDERSON
+void gera_numero(struct conta *contas, int *i);
 
 //tratamento de string para evitar sql injection
 void tratamento(char *ent, int tam){ 

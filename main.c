@@ -2,11 +2,11 @@
 #include <stdlib.h>
 #include "db_connect.c"
 #include "interface.c"
-#include "login.c"
 
 int main(){
 	system("clear");
-	form_login();
+	//form_login();
+	acesso();
 }
 
 /*
