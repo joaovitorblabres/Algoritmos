@@ -81,7 +81,6 @@ int comandos(int esc){ //comandos para conexão com banco de dados
 				if(ins_conta){
 					form_include_conta();
 				}
-				getchar();
 				break;
 			case 2:
 				select_pessoa(conn);
@@ -117,16 +116,20 @@ void select_pessoa(PGconn *conn){
 	printf("+ ID |        Primeiro Nome |          Ultimo Nome |             CPF | Conta |  Senha |      Saldo |     Limite | Nivel\n");
 	if(rows){
 		for(int i=0; i<rows; i++) {
-			printf("+%*s | %*s | %*s | %*s | %s | %s | %*s | %*s | %s\n",3, PQgetvalue(res, i, 0), 20, PQgetvalue(res, i, 1), 20, PQgetvalue(res, i, 3), 15, PQgetvalue(res, i, 2), PQgetvalue(res, i, 6), PQgetvalue(res, i, 7), 10, PQgetvalue(res, i, 8), 10, PQgetvalue(res, i, 9), PQgetvalue(res, i, 10));
+			printf("+%3s | %20s | %20s | %15s | %5s | %6s | %10s | %10s | %2s\n", PQgetvalue(res, i, 0), PQgetvalue(res, i, 1), PQgetvalue(res, i, 3), PQgetvalue(res, i, 2), PQgetvalue(res, i, 6), PQgetvalue(res, i, 7), PQgetvalue(res, i, 8), PQgetvalue(res, i, 9), PQgetvalue(res, i, 10));
 		}    
 	}
 }
 
+//---------------------------------------------------------------------------apagar
 int apagar(PGconn *conn, int receb){
 	if(PQstatus(conn) != CONNECTION_BAD){
 		char str_del[500];
-		sprintf(str_del,"DELETE FROM pessoa WHERE idpessoa = %d", receb);
+		sprintf(str_del,"DELETE FROM conta WHERE pessoa_idpessoa = %d", receb);
 		PGresult *res = PQexec(conn, str_del);
+		PQclear(res);
+		sprintf(str_del,"DELETE FROM pessoa WHERE idpessoa = %d", receb);
+		res = PQexec(conn, str_del);
 		if (PQresultStatus(res) != PGRES_COMMAND_OK) 
 			do_exit(conn, res);
 		else
@@ -177,12 +180,12 @@ char nv_login(char *login, char *senha){
 	sprintf(lvl,"%s",PQgetvalue(res, 0, 0));
 	return (*lvl);
 }
-
+int i=0;
 //----------------------------------------------------------------------------inserção de usuários
 void form_include_usuario(){ // form para incluir usuários
 	PGconn *conn = PQconnectdb(STR_CON); //cria conexão com banco de dados
 	char nome[500];
-	int i=0, ok = 0;
+	int ok = 0;
 	struct pessoa pessoas[1000];
 	printf("\n");
 	printf("+Informe o nome: ");
@@ -298,12 +301,13 @@ void separa_nome(char *nome, int tamanho, struct pessoa *dadosCliente, int *l){
 	}else{
 		for(i=0;i<pos_primeiro;i++){
 			(*(dadosCliente+*l)).primeiro_nome[i] = nome[i];
+			(*(dadosCliente+*l)).primeiro_nome[strlen((*(dadosCliente+*l)).primeiro_nome)] = '\0';
 		}
 		for(i=(pos_ultimo+1);i<tamanho;i++,k++){
 			(*(dadosCliente+*l)).ultimo_nome[k] = nome[i];
+			(*(dadosCliente+*l)).ultimo_nome[strlen((*(dadosCliente+*l)).ultimo_nome)] = '\0';
 		}
 	}
-	*l++;
 }
 
 int valida_cpf(char *cpf, int tamanho){
