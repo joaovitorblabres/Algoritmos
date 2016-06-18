@@ -6,6 +6,7 @@
 
 int main(){
 	system("clear");
+	acesso();
 	form_login();
 }
 

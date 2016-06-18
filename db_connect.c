@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <postgresql/libpq-fe.h>
+#include <libpq-fe.h>
 #define STR_CON "user=postgres password=postgres dbname=nubank"
 
 struct pessoa{
@@ -22,6 +22,8 @@ void do_exit(PGconn *conn, PGresult *res);
 int comandos(int esc);
 void select_pessoa(PGconn *conn);
 int apagar(PGconn *conn, int receb);
+
+//editar
 void editar(PGconn *conn, int receb);
 void tratamento(char *ent, int tam);
 
@@ -37,7 +39,7 @@ int valida_cpf(char *cpf, int tamanho);
 
 void form_include_conta();
 int insert_conta(PGconn *conn, struct conta *contas, int *i);
-void gera_numero(struct conta *contas, int *i); // FAZER ===========================================================+>>>>>> ANDERSON
+void gera_numero(struct conta *contas, int *i);
 
 //tratamento de string para evitar sql injection
 void tratamento(char *ent, int tam){ 
@@ -65,7 +67,6 @@ void do_exit(PGconn *conn, PGresult *res) { //retorna erro de conexão
 }
 
 int comandos(int esc){ //comandos para conexão com banco de dados
-	PGconn *conn = PQconnectdb(STR_CON); //cria conexão com banco de dados
 	int del_id, up_id, ins_conta;
 	if (PQstatus(conn) == CONNECTION_BAD) {
 		fprintf(stderr, "Connection to database failed: %s\n",PQerrorMessage(conn));
@@ -81,7 +82,6 @@ int comandos(int esc){ //comandos para conexão com banco de dados
 				if(ins_conta){
 					form_include_conta();
 				}
-				getchar();
 				break;
 			case 2:
 				select_pessoa(conn);
@@ -91,6 +91,7 @@ int comandos(int esc){ //comandos para conexão com banco de dados
 				printf("\nInforme o ID que você quer editar (0 = CANCELAR): ");
 				scanf("%d",&up_id);
 				getchar();
+				system("clear");
 				if(up_id)
 					editar(conn, up_id);
 				break;
@@ -117,16 +118,20 @@ void select_pessoa(PGconn *conn){
 	printf("+ ID |        Primeiro Nome |          Ultimo Nome |             CPF | Conta |  Senha |      Saldo |     Limite | Nivel\n");
 	if(rows){
 		for(int i=0; i<rows; i++) {
-			printf("+%*s | %*s | %*s | %*s | %s | %s | %*s | %*s | %s\n",3, PQgetvalue(res, i, 0), 20, PQgetvalue(res, i, 1), 20, PQgetvalue(res, i, 3), 15, PQgetvalue(res, i, 2), PQgetvalue(res, i, 6), PQgetvalue(res, i, 7), 10, PQgetvalue(res, i, 8), 10, PQgetvalue(res, i, 9), PQgetvalue(res, i, 10));
+			printf("+%3s | %20s | %20s | %15s | %5s | %6s | %10s | %10s | %2s\n", PQgetvalue(res, i, 0), PQgetvalue(res, i, 1), PQgetvalue(res, i, 3), PQgetvalue(res, i, 2), PQgetvalue(res, i, 6), PQgetvalue(res, i, 7), PQgetvalue(res, i, 8), PQgetvalue(res, i, 9), PQgetvalue(res, i, 10));
 		}    
 	}
 }
 
+//------------------------------------------------------------------------------------------apagar
 int apagar(PGconn *conn, int receb){
 	if(PQstatus(conn) != CONNECTION_BAD){
 		char str_del[500];
-		sprintf(str_del,"DELETE FROM pessoa WHERE idpessoa = %d", receb);
+		sprintf(str_del,"DELETE FROM conta WHERE pessoa_idpessoa = %d", receb);
 		PGresult *res = PQexec(conn, str_del);
+		PQclear(res);
+		sprintf(str_del,"DELETE FROM pessoa WHERE idpessoa = %d", receb);
+		res = PQexec(conn, str_del);
 		if (PQresultStatus(res) != PGRES_COMMAND_OK) 
 			do_exit(conn, res);
 		else
@@ -136,26 +141,66 @@ int apagar(PGconn *conn, int receb){
 	}
 }
 
-//----------------------------------------------------------------------------editar
+//------------------------------------------------------------------------------------------editar
 void editar(PGconn *conn, int receb){ //edição do nome no banco de dados
 	if(PQstatus(conn) != CONNECTION_BAD){
 		char str_up[500];
 		char altera[500];
-		getchar();
-		printf("Escrava o novo nome: ");
-		fgets(altera,500,stdin);
-		altera[strlen(altera)-1] = '\0';
-		tratamento(altera,strlen(altera)); //trata strings
-		sprintf(str_up,"UPDATE pessoa SET \"primeiro_nome\" = '%s' WHERE idpessoa = %d", altera, receb);
-		PGresult *res = PQexec(conn, str_up);
-		if (PQresultStatus(res) != PGRES_COMMAND_OK) 
-			do_exit(conn, res);
-		else
-			printf("Alteração do id: %d ====== OK\n",receb);
-		PQclear(res);
+		int campo;
+		while(select_pessoa(conn),campos_edicao(),scanf("%d",&campo),campo){
+			getchar();
+			switch(campo){
+				case 1:
+					printf("+ Escreva o novo Primeiro_Nome: \n+ ");
+					fgets(altera,500,stdin);
+					altera[strlen(altera)-1] = '\0';
+					tratamento(altera,strlen(altera)); //trata strings
+					sprintf(str_up,"UPDATE pessoa SET \"primeiro_nome\" = '%s' WHERE idpessoa = %d", altera, receb);
+					break;
+				case 2:
+					printf("+ Escreva o novo Ultimo_Nome: \n+ ");
+					fgets(altera,500,stdin);
+					altera[strlen(altera)-1] = '\0';
+					tratamento(altera,strlen(altera)); //trata strings
+					sprintf(str_up,"UPDATE pessoa SET \"ultimo_nome\" = '%s' WHERE idpessoa = %d", altera, receb);
+					break;
+				case 3:
+					while(printf("+ Informe a nova senha: \n+ "),fgets(altera,500,stdin),strlen(altera)-1>6){
+						printf("+ Quantidades de caracteres inválidos\n");
+					}
+					altera[strlen(altera)-1] = '\0';
+					tratamento(altera,strlen(altera)); //trata strings
+					sprintf(str_up,"UPDATE conta SET \"senha\" = '%s' WHERE pessoa_idpessoa = %d", altera, receb);
+					break;
+				case 4:
+					printf("+ Informe o novo limite do usuário: \n+ ");
+					fgets(altera,500,stdin);
+					altera[strlen(altera)-1] = '\0';
+					tratamento(altera,strlen(altera)); //trata strings
+					sprintf(str_up,"UPDATE conta SET \"limite\" = '%s' WHERE pessoa_idpessoa = %d", altera, receb);
+					break;
+				case 5:
+					while(printf("+ Informe o novo nível de acesso: \n+ "),fgets(altera,500,stdin),altera[0]>50){
+						printf("+ Nível de acesso inválido\n");
+					}
+						altera[strlen(altera)-1] = '\0';
+						tratamento(altera,strlen(altera)); //trata strings
+						sprintf(str_up,"UPDATE conta SET \"nivel_acesso\" = '%s' WHERE pessoa_idpessoa = %d", altera, receb);
+					break;
+			}
+			PGresult *res = PQexec(conn, str_up);
+			if(PQresultStatus(res) != PGRES_COMMAND_OK){
+				system("clear");
+				printf("+\n");
+			}else{
+				system("clear");
+				printf("+ Edição OK\n");
+			}
+			PQclear(res);
+		}
 	}
 }
-//----------------------------------------------------------------------------verificação de login
+//------------------------------------------------------------------------------------------verificação de login
 int login(char *login, char *senha){ 
 	PGconn *conn = PQconnectdb(STR_CON);
 	char str_login[500];
@@ -177,12 +222,12 @@ char nv_login(char *login, char *senha){
 	sprintf(lvl,"%s",PQgetvalue(res, 0, 0));
 	return (*lvl);
 }
-
-//----------------------------------------------------------------------------inserção de usuários
+int i=0;
+//------------------------------------------------------------------------------------------inserção de usuários
 void form_include_usuario(){ // form para incluir usuários
 	PGconn *conn = PQconnectdb(STR_CON); //cria conexão com banco de dados
 	char nome[500];
-	int i=0, ok = 0;
+	int ok = 0;
 	struct pessoa pessoas[1000];
 	printf("\n");
 	printf("+Informe o nome: ");
@@ -202,6 +247,7 @@ void form_include_usuario(){ // form para incluir usuários
 	insert_pessoa(conn,pessoas,&i); // chama função para inserir no banco
 	i++;
 }
+
 char id[10];
 int insert_pessoa(PGconn *conn, struct pessoa *dadosCliente, int *i){ //inserção no banco de dados
 	if(PQstatus(conn) != CONNECTION_BAD){
@@ -230,8 +276,7 @@ void form_include_conta(){ //form para incluir conta
 	res = PQexec(conn,select);
 	sprintf(nome,"%s",PQgetvalue(res, 0, 0));
 
-//	gera_numero(contas,&i);
-	contas[i].numero = 10000;
+	gera_numero(contas,&i);
 	do{
 		printf("+Informe uma senha (até 6 caracteres) para o usuário \"%s\": ",nome);
 		fgets(contas[i].senha,100,stdin);
@@ -271,8 +316,29 @@ int insert_conta(PGconn *conn, struct conta *contas, int *i){ //inserção de co
 	}
 }	
 
-void gera_numero(struct conta *contas, int *i){ // =================================================+++++++++++>>> FAZER
-
+//------------------------------------------------------------------------------------------gera numero da conta
+void gera_numero(struct conta *contas, int *i){ 
+	int numRand[5], j, quinto=0, numeroConta=0;
+	char strNum[4];
+	// Gera os 4 primeiros digitos aleatoriamente indo de 0 a 9
+	for(j=0; j<4; j++){
+		numRand[j] = rand() % 10;
+		// Gera o quinto digito multiplicando aleatorio*9 aleatorio*8...
+		quinto += numRand[j]*(9-j);
+	}
+	// Faz o mod
+	quinto=(quinto%11);
+	// Atribui 0 caso o mod retorne 10
+	if(quinto==10)
+		quinto=0;
+	// Atribui ao numero da conta o digito verificador
+	numRand[4] = quinto;
+	// Concatena os numeros gerados
+	sprintf(strNum, "%d%d%d%d%d", numRand[0], numRand[1], numRand[2], numRand[3], numRand[4]);
+	// Converte o valor para int
+	numeroConta = atoi(strNum);
+	printf("+O numero da conta é \"%d \"\n" , numeroConta);
+	(*(contas+*i)).numero = numeroConta;
 }
 
 //------------------------------------------------------------------------------------------separa primeiro e ultimo nome
@@ -297,9 +363,11 @@ void separa_nome(char *nome, int tamanho, struct pessoa *dadosCliente, int *l){
 	}else{
 		for(i=0;i<pos_primeiro;i++){
 			(*(dadosCliente+*l)).primeiro_nome[i] = nome[i];
+			(*(dadosCliente+*l)).primeiro_nome[strlen((*(dadosCliente+*l)).primeiro_nome)] = '\0';
 		}
 		for(i=(pos_ultimo+1);i<tamanho;i++,k++){
 			(*(dadosCliente+*l)).ultimo_nome[k] = nome[i];
+			(*(dadosCliente+*l)).ultimo_nome[strlen((*(dadosCliente+*l)).ultimo_nome)] = '\0';
 		}
 	}
 }
@@ -307,50 +375,9 @@ void separa_nome(char *nome, int tamanho, struct pessoa *dadosCliente, int *l){
 int valida_cpf(char *cpf, int tamanho){
 	int num[11],j,i,k=0, multiplica = 0, resto, verificador[2];
 	for(i=0;i<tamanho;i++){
-		switch(cpf[i]){
-			case '0':
-				num[k] = 0;
-				k++;
-				break;
-			case '1':
-				num[k] = 1;
-				k++;
-				break;
-			case '2':
-				num[k] = 2;
-				k++;
-				break;
-			case '3':
-				num[k] = 3;
-				k++;
-				break;
-			case '4':
-				num[k] = 4;
-				k++;
-				break;
-			case '5':
-				num[k] = 5;
-				k++;
-				break;
-			case '6':
-				num[k] = 6;
-				k++;
-				break;
-			case '7':
-				num[k] = 7;
-				k++;
-				break;
-			case '8':
-				num[k] = 8;
-				k++;
-				break;
-			case '9':
-				num[k] = 9;
-				k++;
-				break;
-			default:
-				break;
-		}
+		num[k] = cpf[i] - '0';
+		if(num[k] >= 0 && num[k] <= 9)
+			k++;
 	}
 	for(k=0;k<2;k++){
 		j=0;

@@ -9,7 +9,27 @@ void user();
 void user_menu();
 void risco();
 void continua();
+void acesso();
+void campos_edicao();
+void nome();
 
+void acesso(){
+	printf("\t\t  _   _   _   _   _   _   \n"); 
+	printf("\t\t / \\ / \\ / \\ / \\ / \\ / \\  \n");
+	printf("\t\t( N | u | B | a | n | k ) \n");
+	printf("\t\t \\_/ \\_/ \\_/ \\_/ \\_/ \\_/  \n");
+  	printf("\n");
+}
+
+void nome(){
+	char nome[500];
+	PGconn *conn = PQconnectdb(STR_CON); //cria conexão com banco de dados
+	PGresult *res;
+	sprintf(select,"SELECT primeiro_nome from pessoa where idPessoa = %s", id);
+	res = PQexec(conn,select);
+	sprintf(nome,"%s",PQgetvalue(res, 0, 0));
+	
+}
 void risco(){
 	int i;
 	printf("+");
@@ -24,6 +44,13 @@ void root_menu(){
 	printf("+\tROOT - SISTEMA ANDERSON E JOÃO\n");
 	risco();
 	printf("+\tEscolha a opção:\n+\t1 - INSERIR NOVO USUÁRIO\n+\t2 - USUÁRIOS\n+\t3 - ATUALIZAR USUÁRIOS\n+\t4 - DELETAR USUÁRIOS\n+\t0 - SAIR\n");
+	printf("+ ");
+}
+
+void campos_edicao(){
+	printf("+\n+\t\t\tEDIÇÃO\n");
+	risco();
+	printf("+ Qual campo você deseja editar?\n+ 1 = Primeiro Nome | 2 = Ultimo Nome | 3 = Senha | 4 = Limite | 5 = Nível de Acesso | 0 = SAIR\n");
 	printf("+ ");
 }
 
