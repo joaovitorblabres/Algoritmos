@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <libpq-fe.h>
-#define STR_CON "user=postgres password=postgres dbname=nubank"
+#define STR_CON "user=postgres password=postgres dbname=NuBank"
 
 struct pessoa{
 	char primeiro_nome[100];
@@ -234,8 +234,8 @@ void form_include_conta(){ //form para incluir conta
 	res = PQexec(conn,select);
 	sprintf(nome,"%s",PQgetvalue(res, 0, 0));
 
-//	gera_numero(contas,&i);
-	contas[i].numero = 10000;
+	gera_numero(contas,&i);
+	//contas[i].numero = 10000;
 	do{
 		printf("+Informe uma senha (até 6 caracteres) para o usuário \"%s\": ",nome);
 		fgets(contas[i].senha,100,stdin);
@@ -276,7 +276,28 @@ int insert_conta(PGconn *conn, struct conta *contas, int *i){ //inserção de co
 }	
 
 void gera_numero(struct conta *contas, int *i){ // =================================================+++++++++++>>> FAZER
-
+	int numRand[5], j, quinto=0, numeroConta=0;
+	char strNum[4];
+	// Gera os 4 primeiros digitos aleatoriamente indo de 0 a 9
+	for(j=0; j<4; j++){
+		numRand[j] = rand() % 10;
+		// Gera o quinto digito multiplicando aleatorio*9 aleatorio*8...
+		quinto += numRand[j]*(9-j);
+	}
+	// Faz o mod
+	quinto=(quinto%11);
+	// Atribui 0 caso o mod retorne 10
+	if(quinto==10)
+		quinto=0;
+	// Atribui ao numero da conta o digito verificador
+	numRand[4] = quinto;
+	// Concatena os numeros gerados
+	sprintf(strNum, "%d%d%d%d%d", numRand[0], numRand[1], numRand[2], numRand[3], numRand[4]);
+	// Converte o valor para int
+	numeroConta = atoi(strNum);
+	printf("+ O numero da conta e: \"%d \":" , numeroConta);
+	(*(contas+*i)).numero = numeroConta;
+			
 }
 
 //------------------------------------------------------------------------------------------separa primeiro e ultimo nome
