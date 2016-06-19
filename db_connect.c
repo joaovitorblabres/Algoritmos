@@ -18,9 +18,12 @@ struct conta{
 	int nivel_acesso;
 };
 
+char id_usr[10];
 void do_exit(PGconn *conn, PGresult *res);
-int comandos(int esc);
+int comandos_root(int esc);
+int comandos_user(int esc);
 void select_pessoa(PGconn *conn);
+void select_user(PGconn *conn);
 int apagar(PGconn *conn, int receb);
 
 //editar
@@ -66,8 +69,9 @@ void do_exit(PGconn *conn, PGresult *res) { //retorna erro de conexão
     exit(1);
 }
 
-int comandos(int esc){ //comandos para conexão com banco de dados
+int comandos_root(int esc){ //comandos
 	int del_id, up_id, ins_conta;
+	PGconn *conn = PQconnectdb(STR_CON);
 	if (PQstatus(conn) == CONNECTION_BAD) {
 		fprintf(stderr, "Connection to database failed: %s\n",PQerrorMessage(conn));
 		PQfinish(conn);
@@ -111,7 +115,59 @@ int comandos(int esc){ //comandos para conexão com banco de dados
 	}
 }
 
-void select_pessoa(PGconn *conn){
+int comandos_user(int esc){ //comandos
+	int del_id, up_id, ins_conta;
+	PGconn *conn = PQconnectdb(STR_CON);
+	if (PQstatus(conn) == CONNECTION_BAD) {
+		fprintf(stderr, "Connection to database failed: %s\n",PQerrorMessage(conn));
+		PQfinish(conn);
+		return (0);
+	}else{
+		switch(esc){
+			case 1:				
+				break;
+			case 2:
+				select_user(conn);
+				break;
+			case 3:
+				select_pessoa(conn);
+				printf("\nInforme o ID que você quer editar (0 = CANCELAR): ");
+				scanf("%d",&up_id);
+				getchar();
+				system("clear");
+				if(up_id)
+					editar(conn, up_id);
+				break;
+			case 4:
+				select_pessoa(conn);
+				printf("\nInforme o ID que você quer apagar (0 = CANCELAR): ");
+				scanf("%d",&del_id);
+				getchar();
+				if(del_id)
+					apagar(conn, del_id);
+				break;
+			default:
+				printf("Opção inválida");
+				return (0);
+				break;
+		}
+	}
+}
+
+void select_user(PGconn *conn){ // select para informações do usuário
+	char query[500];
+	sprintf(query,"SELECT * FROM pessoa full join conta on idpessoa = pessoa_idpessoa WHERE pessoa_idpessoa = %s",id_usr);
+	PGresult *res = PQexec(conn, query);
+	int rows = PQntuples(res);
+	printf("+        Primeiro Nome |          Ultimo Nome |             CPF | Conta |  Senha |      Saldo |     Limite | Nivel\n");
+	if(rows){
+		for(int i=0; i<rows; i++) {
+			printf("+ %20s | %20s | %15s | %5s | %6s | %10s | %10s | %2s\n", PQgetvalue(res, i, 1), PQgetvalue(res, i, 3), PQgetvalue(res, i, 2), PQgetvalue(res, i, 6), PQgetvalue(res, i, 7), PQgetvalue(res, i, 8), PQgetvalue(res, i, 9), PQgetvalue(res, i, 10));
+		}    
+	}
+}
+
+void select_pessoa(PGconn *conn){ // select para informações para o root
 	PGresult *res = PQexec(conn, "SELECT * FROM pessoa full join conta on idpessoa = pessoa_idpessoa ORDER BY idpessoa");    
 	int rows = PQntuples(res);
 	printf("+%*d registros encontrados:\n",3,rows);
@@ -220,6 +276,10 @@ char nv_login(char *login, char *senha){
 	sprintf(str_login,"SELECT nivel_acesso from conta where \"numero\" = '%s' AND \"senha\" = '%s'", login, senha);
 	PGresult *res = PQexec(conn,str_login);
 	sprintf(lvl,"%s",PQgetvalue(res, 0, 0));
+	PQclear(res);
+	sprintf(str_login,"SELECT pessoa_idpessoa from conta where \"numero\" = '%s' AND \"senha\" = '%s'", login, senha);
+	res = PQexec(conn,str_login);
+	sprintf(id_usr,"%s",PQgetvalue(res, 0, 0));
 	return (*lvl);
 }
 int i=0;
