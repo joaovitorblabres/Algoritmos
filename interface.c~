@@ -21,13 +21,14 @@ void acesso(){
   	printf("\n");
 }
 
+char nome_usr[500];
 void nome(){
-	char nome[500];
+	char select[500];
 	PGconn *conn = PQconnectdb(STR_CON); //cria conexão com banco de dados
 	PGresult *res;
-	sprintf(select,"SELECT primeiro_nome from pessoa where idPessoa = %s", id);
+	sprintf(select,"SELECT primeiro_nome from pessoa where idPessoa = %s", id_usr);
 	res = PQexec(conn,select);
-	sprintf(nome,"%s",PQgetvalue(res, 0, 0));
+	sprintf(nome_usr,"%s",PQgetvalue(res, 0, 0));
 }
 void risco(){
 	int i;
@@ -64,7 +65,7 @@ void root(){
 			case 3:
 			case 4:
 				system("clear");
-				comandos(escolha);
+				comandos_root(escolha);
 				continua();
 				system("clear");
 				root_menu();
@@ -90,7 +91,7 @@ void user(){
 			case 2:
 			case 3:
 				system("clear");
-				comandos(escolha);
+				comandos_user(escolha);
 				continua();
 				system("clear");
 				user_menu();
@@ -106,6 +107,8 @@ void user(){
 }
 
 void user_menu(){
+	nome();
+	printf("+\t\tBEM-VINDO \"%s\"\n",nome_usr);
 	printf("+\t\tSISTEMA ANDERSON E JOÃO\n");
 	risco();
 	printf("+\tEscolha a opção:\n+\t1 - REALIZAR PAGAMENTO\n+\t2 - INFORMAÇÕES\n+\t3 - ATUALIZAR DADOS\n+\t0 - SAIR\n");

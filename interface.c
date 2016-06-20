@@ -50,7 +50,7 @@ void root_menu(){
 void campos_edicao(){
 	printf("+\n+\t\t\tEDIÇÃO\n");
 	risco();
-	printf("+ Qual campo você deseja editar?\n+ 1 = Primeiro Nome | 2 = Ultimo Nome | 3 = Senha | 4 = Limite | 5 = Nível de Acesso | 0 = SAIR\n");
+	printf("+ Qual campo você deseja editar?\n+ 1 = Primeiro Nome | 2 = Ultimo Nome | 3 = Senha | 4 = Limite | 5 = Nível de Acesso | 6 = Adicionar conta | 0 = SAIR\n");
 	printf("+ ");
 }
 
