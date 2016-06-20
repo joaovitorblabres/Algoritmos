@@ -17,6 +17,7 @@ int form_login(){
 	char senha[100];
 	int espera,i;
 	do{	
+		acesso();
 		printf("Informe sua conta: ");
 		fgets(usuario,100,stdin);
 		usuario[strlen(usuario)-1] = '\0';

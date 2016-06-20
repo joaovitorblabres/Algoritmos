@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <libpq-fe.h>
-#define STR_CON "user=postgres password=postgres dbname=nubank"
+#define STR_CON "user=postgres password=postgres dbname=NuBank"
 
 struct pessoa{
 	char primeiro_nome[100];
@@ -18,14 +18,22 @@ struct conta{
 	int nivel_acesso;
 };
 
+// Grava o fodendo ID do fodendo Usuario
+char id_usr[10];
 void do_exit(PGconn *conn, PGresult *res);
-int comandos(int esc);
-void select_pessoa(PGconn *conn);
-int apagar(PGconn *conn, int receb);
+int comandos_root(int esc);
+int comandos_user(int esc);
 
-//editar
+void select_pessoa(PGconn *conn);
+void select_user(PGconn *conn);
+
+//
+void user_pagar(int valor, char *categoria);
+
+//edições
 void editar(PGconn *conn, int receb);
 void tratamento(char *ent, int tam);
+int apagar(PGconn *conn, int receb);
 
 // declaração de login
 int login(char *login, char *senha);
@@ -36,10 +44,12 @@ int insert_pessoa(PGconn *conn, struct pessoa *dadosCliente, int *i);
 void form_include_usuario();
 void separa_nome(char *nome, int tamanho, struct pessoa *dadosCliente, int *l);
 int valida_cpf(char *cpf, int tamanho);
+int verifica_cpf(long long int);
 
 void form_include_conta();
 int insert_conta(PGconn *conn, struct conta *contas, int *i);
 void gera_numero(struct conta *contas, int *i);
+int verifica_numero(int);
 
 //tratamento de string para evitar sql injection
 void tratamento(char *ent, int tam){ 
@@ -66,8 +76,9 @@ void do_exit(PGconn *conn, PGresult *res) { //retorna erro de conexão
     exit(1);
 }
 
-int comandos(int esc){ //comandos para conexão com banco de dados
+int comandos_root(int esc){ //comandos
 	int del_id, up_id, ins_conta;
+	PGconn *conn = PQconnectdb(STR_CON);
 	if (PQstatus(conn) == CONNECTION_BAD) {
 		fprintf(stderr, "Connection to database failed: %s\n",PQerrorMessage(conn));
 		PQfinish(conn);
@@ -111,7 +122,61 @@ int comandos(int esc){ //comandos para conexão com banco de dados
 	}
 }
 
-void select_pessoa(PGconn *conn){
+int comandos_user(int esc){ //comandos
+	int del_id, up_id, ins_conta;
+	PGconn *conn = PQconnectdb(STR_CON);
+	if (PQstatus(conn) == CONNECTION_BAD) {
+		fprintf(stderr, "Connection to database failed: %s\n",PQerrorMessage(conn));
+		PQfinish(conn);
+		return (0);
+	}else{
+		switch(esc){
+			case 1:		
+				system("clear");
+				user_pagar(1000, "Shopping");		
+				break;
+			case 2:
+				select_user(conn);
+				break;
+			case 3:
+				select_pessoa(conn);
+				printf("\nInforme o ID que você quer editar (0 = CANCELAR): ");
+				scanf("%d",&up_id);
+				getchar();
+				system("clear");
+				if(up_id)
+					editar(conn, up_id);
+				break;
+			case 4:
+				select_pessoa(conn);
+				printf("\nInforme o ID que você quer apagar (0 = CANCELAR): ");
+				scanf("%d",&del_id);
+				getchar();
+				if(del_id)
+					apagar(conn, del_id);
+				break;
+			default:
+				printf("Opção inválida");
+				return (0);
+				break;
+		}
+	}
+}
+
+void select_user(PGconn *conn){ // select para informações do usuário
+	char query[500];
+	sprintf(query,"SELECT * FROM pessoa full join conta on idpessoa = pessoa_idpessoa WHERE pessoa_idpessoa = %s",id_usr);
+	PGresult *res = PQexec(conn, query);
+	int rows = PQntuples(res);
+	printf("+        Primeiro Nome |          Ultimo Nome |             CPF | Conta |  Senha |      Saldo |     Limite | Nivel\n");
+	if(rows){
+		for(int i=0; i<rows; i++) {
+			printf("+ %20s | %20s | %15s | %5s | %6s | %10s | %10s | %2s\n", PQgetvalue(res, i, 1), PQgetvalue(res, i, 3), PQgetvalue(res, i, 2), PQgetvalue(res, i, 6), PQgetvalue(res, i, 7), PQgetvalue(res, i, 8), PQgetvalue(res, i, 9), PQgetvalue(res, i, 10));
+		}    
+	}
+}
+
+void select_pessoa(PGconn *conn){ // select para informações para o root
 	PGresult *res = PQexec(conn, "SELECT * FROM pessoa full join conta on idpessoa = pessoa_idpessoa ORDER BY idpessoa");    
 	int rows = PQntuples(res);
 	printf("+%*d registros encontrados:\n",3,rows);
@@ -220,6 +285,10 @@ char nv_login(char *login, char *senha){
 	sprintf(str_login,"SELECT nivel_acesso from conta where \"numero\" = '%s' AND \"senha\" = '%s'", login, senha);
 	PGresult *res = PQexec(conn,str_login);
 	sprintf(lvl,"%s",PQgetvalue(res, 0, 0));
+	PQclear(res);
+	sprintf(str_login,"SELECT pessoa_idpessoa from conta where \"numero\" = '%s' AND \"senha\" = '%s'", login, senha);
+	res = PQexec(conn,str_login);
+	sprintf(id_usr,"%s",PQgetvalue(res, 0, 0));
 	return (*lvl);
 }
 int i=0;
@@ -236,16 +305,44 @@ void form_include_usuario(){ // form para incluir usuários
 	separa_nome(nome,strlen(nome),pessoas,&i);
 
 	do{
-		printf("+Informe o CPF: ");
-		fgets(pessoas[i].CPF,100,stdin);
-		pessoas[i].CPF[strlen(pessoas[i].CPF)-1] = '\0';
-		ok = valida_cpf(pessoas[i].CPF,strlen(pessoas[i].CPF));
+		do{
+			ok = 0;
+			printf("+Informe o CPF: ");
+			fgets(pessoas[i].CPF,100,stdin);
+			pessoas[i].CPF[strlen(pessoas[i].CPF)-1] = '\0';
+			ok = valida_cpf(pessoas[i].CPF,strlen(pessoas[i].CPF));
+			if(!ok)
+				printf("+CPF inválido!\n");
+		}while(!ok);
+		ok = 0;
+		ok = verifica_cpf(atoll(pessoas[i].CPF));
 		if(!ok)
-			printf("+CPF inválido!\n");
+			printf("+CPF já utilizado!\n");
 	}while(!ok);
+
 
 	insert_pessoa(conn,pessoas,&i); // chama função para inserir no banco
 	i++;
+}
+
+int verifica_cpf(long long int cpf){ // verifica CPF ================== terminar
+	char sl_num[100], select[1000];
+	int i;
+	long long int num;
+	PGconn *conn = PQconnectdb(STR_CON);
+	PGresult *res;
+	sprintf(select,"SELECT cpf from pessoa");
+	res = PQexec(conn,select);
+	int rows = PQntuples(res);
+	for(i=0; i<rows; i++) {
+		sprintf(sl_num,"%s",PQgetvalue(res, i, 0));
+		num = atoll(sl_num);
+		if(cpf == num){
+			PQclear(res);
+			return (0);
+		}
+	}
+	return (1);	
 }
 
 char id[10];
@@ -272,11 +369,13 @@ void form_include_conta(){ //form para incluir conta
 	struct conta contas[1000];
 	PGconn *conn = PQconnectdb(STR_CON);
 	PGresult *res;
-	sprintf(select,"SELECT primeiro_nome from pessoa where idPessoa = %s", id);
+	sprintf(select,"SELECT primeiro_nome from pessoa where idPessoa = '%s'", id);
 	res = PQexec(conn,select);
 	sprintf(nome,"%s",PQgetvalue(res, 0, 0));
-
-	gera_numero(contas,&i);
+	
+	do{
+		gera_numero(contas,&i);
+	}while(!verifica_numero(contas[i].numero));
 	do{
 		printf("+Informe uma senha (até 6 caracteres) para o usuário \"%s\": ",nome);
 		fgets(contas[i].senha,100,stdin);
@@ -301,6 +400,25 @@ void form_include_conta(){ //form para incluir conta
 
 }
 
+int verifica_numero(int numero){ // verifica numero da conta
+	char sl_num[100], select[1000];
+	int num,i;
+	PGconn *conn = PQconnectdb(STR_CON);
+	PGresult *res;
+	sprintf(select,"SELECT numero from conta");
+	res = PQexec(conn,select);
+	int rows = PQntuples(res);
+	for(i=0; i<rows; i++) {
+		sprintf(sl_num,"%s",PQgetvalue(res, i, 0));
+		num = atoi(sl_num);
+		if(numero == num){
+			PQclear(res);
+			return (0);
+		}
+	}
+	return (1);	
+}
+
 int insert_conta(PGconn *conn, struct conta *contas, int *i){ //inserção de conta no banco de dados
 	if(PQstatus(conn) != CONNECTION_BAD){
 		PGresult *res;
@@ -319,7 +437,7 @@ int insert_conta(PGconn *conn, struct conta *contas, int *i){ //inserção de co
 //------------------------------------------------------------------------------------------gera numero da conta
 void gera_numero(struct conta *contas, int *i){ 
 	int numRand[5], j, quinto=0, numeroConta=0;
-	char strNum[4];
+	char strNum[5];
 	// Gera os 4 primeiros digitos aleatoriamente indo de 0 a 9
 	for(j=0; j<4; j++){
 		numRand[j] = rand() % 10;
@@ -337,7 +455,7 @@ void gera_numero(struct conta *contas, int *i){
 	sprintf(strNum, "%d%d%d%d%d", numRand[0], numRand[1], numRand[2], numRand[3], numRand[4]);
 	// Converte o valor para int
 	numeroConta = atoi(strNum);
-	printf("+O numero da conta é \"%d \"\n" , numeroConta);
+	printf("+O numero da conta é \"%d\"\n" , numeroConta);
 	(*(contas+*i)).numero = numeroConta;
 }
 
@@ -395,4 +513,42 @@ int valida_cpf(char *cpf, int tamanho){
 		return (1);
 	else
 		return (0);
+}
+
+void user_pagar(int valor, char *categoria){
+	PGconn *conn = PQconnectdb(STR_CON);
+	if(PQstatus(conn) != CONNECTION_BAD){
+		PGresult *res;
+		char insert[500], select[500], id_Cat[500], limite[6];
+		int escolha;
+		// Faz o insert da categoria - se nao existir
+		sprintf(select,"SELECT idCateg FROM categ WHERE nome = '%s'", categoria);
+		res = PQexec(conn,select);
+		if(PQgetisnull(res, 0, 0)){
+			system("clear");
+			printf("Deseja inserir uma nova categoria? [0 = NAO/1 = SIM]\n");
+			scanf("%d", &escolha);
+			getchar();
+			if(escolha){
+				sprintf(insert,"INSERT INTO categ (\"nome\") VALUES('%s')", categoria);
+				res = PQexec(conn, insert);
+				if (PQresultStatus(res) != PGRES_COMMAND_OK){ 
+					do_exit(conn, res);
+				}else{
+					printf("Categoria inserida ====== OK\n");	
+				}
+			}
+		}
+		// Verifica se o ótario tem limite
+		sprintf(select, "SELECT limite FROM conta WHERE pessoa_idpessoa = '%s'", id_usr);
+		res = PQexec(conn, select);
+		sprintf(limite,"%s",PQgetvalue(res, 0, 0));
+		if(valor > atoi(limite)){
+			printf("Limite insuficiente, favor, pague suas contas\n");
+		}else{
+			//Fazer tirar do limite, salvar no banco o novo limite, quando o cara pagar, somar o total de gastos com o que sobrou no campo limite e atualizar
+			//Para o limite voltar ao valor salvo
+		}
+		PQclear(res);
+	}
 }
