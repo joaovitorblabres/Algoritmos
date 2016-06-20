@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <libpq-fe.h>
-#define STR_CON "user=postgres password=postgres dbname=nubank"
+#define STR_CON "user=postgres password=postgres dbname=NuBank"
 
 struct pessoa{
 	char primeiro_nome[100];
@@ -17,7 +17,7 @@ struct conta{
 	double saldo;
 	int nivel_acesso;
 };
-
+// Grava o fodendo ID do fodendo Usuario
 char id_usr[10];
 void do_exit(PGconn *conn, PGresult *res);
 int comandos_root(int esc);
@@ -25,6 +25,9 @@ int comandos_user(int esc);
 void select_pessoa(PGconn *conn);
 void select_user(PGconn *conn);
 int apagar(PGconn *conn, int receb);
+
+//
+void user_pagar(int valor, char *categoria);
 
 //editar
 void editar(PGconn *conn, int receb);
@@ -124,7 +127,9 @@ int comandos_user(int esc){ //comandos
 		return (0);
 	}else{
 		switch(esc){
-			case 1:				
+			case 1:		
+				system("clear");
+				user_pagar(1000, "Shopping");		
 				break;
 			case 2:
 				select_user(conn);
@@ -455,4 +460,41 @@ int valida_cpf(char *cpf, int tamanho){
 		return (1);
 	else
 		return (0);
+}
+
+void user_pagar(int valor, char *categoria){
+	PGconn *conn = PQconnectdb(STR_CON);
+	if(PQstatus(conn) != CONNECTION_BAD){
+		PGresult *res;
+		char insert[500], select[500], id_Cat[500], limite[6];
+		int escolha;
+		// Faz o insert da categoria - se nao existir
+		sprintf(select,"SELECT idCateg FROM categ WHERE nome = '%s'", categoria);
+		res = PQexec(conn,select);
+		if(PQgetisnull(res, 0, 0)){
+			system("clear");
+			printf("Deseja inserir uma nova categoria? [0 = NAO/1 = SIM]\n");
+			scanf("%d", &escolha);
+			getchar();
+			if(escolha){
+				sprintf(insert,"INSERT INTO categ (\"nome\") VALUES('%s')", categoria);
+				res = PQexec(conn, insert);
+				if (PQresultStatus(res) != PGRES_COMMAND_OK){ 
+					do_exit(conn, res);
+				}else{
+					printf("Categoria inserida ====== OK\n");	
+				}
+			}
+		}
+		// Verifica se o ótario tem limite
+		sprintf(select, "SELECT limite FROM conta WHERE pessoa_idpessoa = '%s'", id_usr);
+		res = PQexec(conn, select);
+		sprintf(limite,"%s",PQgetvalue(res, 0, 0));
+		if(valor > atoi(limite){
+			printf("Limite insuficiente, favor, pague suas contas\n");
+		else{
+			//Fazer tirar do limite, salvar no banco o novo limite, quando o cara pagar, somar o total de gastos com o que sobrou no campo limite e atualizar
+			//Para o limite voltar ao valor salvo
+		PQclear(res);
+	}
 }
