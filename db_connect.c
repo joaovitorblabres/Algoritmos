@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <libpq-fe.h>
+#include <unistd.h>
 #define STR_CON "user=postgres password=postgres dbname=NuBank"
 
 // Definicao da struct pessoa
@@ -205,7 +206,7 @@ void select_user(PGconn *conn){
 	sprintf(query,"SELECT * FROM pessoa full join conta on idpessoa = pessoa_idpessoa WHERE pessoa_idpessoa = %s",id_usr);
 	PGresult *res = PQexec(conn, query);
 	int rows = PQntuples(res);
-	printf("+        Primeiro Nome |          Ultimo Nome |             CPF | Conta |  Senha |      Saldo |     Limite | Nivel\n");
+	printf("+        Primeiro Nome |          Ultimo Nome |             CPF | Conta |  Senha |     Limite |      Saldo | Nivel\n");
 	if(rows){
 		for(int i=0; i<rows; i++) {
 			printf("+ %20s | %20s | %15s | %5s | %6s | %10s | %10s | %2s\n", PQgetvalue(res, i, 1), PQgetvalue(res, i, 3), PQgetvalue(res, i, 2), PQgetvalue(res, i, 6), PQgetvalue(res, i, 7), PQgetvalue(res, i, 8), PQgetvalue(res, i, 9), PQgetvalue(res, i, 10));
@@ -218,7 +219,7 @@ void select_pessoa(PGconn *conn){
 	PGresult *res = PQexec(conn, "SELECT * FROM pessoa full join conta on idpessoa = pessoa_idpessoa ORDER BY idpessoa");    
 	int rows = PQntuples(res);
 	printf("+%*d registros encontrados:\n",3,rows);
-	printf("+ ID |        Primeiro Nome |          Ultimo Nome |             CPF | Conta |  Senha |      Saldo |     Limite | Nivel\n");
+	printf("+ ID |        Primeiro Nome |          Ultimo Nome |             CPF | Conta |  Senha |     Limite |      Saldo | Nivel\n");
 	if(rows){
 		for(int i=0; i<rows; i++) {
 			printf("+%3s | %20s | %20s | %15s | %5s | %6s | %10s | %10s | %2s\n", PQgetvalue(res, i, 0), PQgetvalue(res, i, 1), PQgetvalue(res, i, 3), PQgetvalue(res, i, 2), PQgetvalue(res, i, 6), PQgetvalue(res, i, 7), PQgetvalue(res, i, 8), PQgetvalue(res, i, 9), PQgetvalue(res, i, 10));
@@ -622,17 +623,17 @@ void user_pagar(int valor, char *categoria, char *data){
 	if(PQstatus(conn) != CONNECTION_BAD){
 		PGresult *res;
 		char insert[500], select[500], update[500], id_Cat[500], limite[6];
-		int escolha=0, pagar, j=0, id_Categ;
-		double total, saldo;
+		int escolha=0, pagar=1, j=0, id_Categ, rows;
+		double total=0.0, saldo;
 		// Faz o insert da categoria - se nao existir
-		sprintf(select,"SELECT idCateg FROM categ WHERE nome = '%s'", categoria);
+		sprintf(select,"SELECT idcateg FROM categ WHERE nome = '%s'", categoria);
 		res = PQexec(conn,select);
 		// Se a categoria nao existir cria uma nova
 		if(PQgetisnull(res, 0, 0)){
 			system("clear");
 			printf("Deseja inserir uma nova categoria? [0 = NAO/1 = SIM]: ");
-			scanf("%d", &escolha);
 			getchar();
+			scanf("%d", &escolha);
 			if(escolha){
 				sprintf(insert,"INSERT INTO categ (\"nome\") VALUES ('%s')", categoria);
 				res = PQexec(conn, insert);
@@ -648,17 +649,20 @@ void user_pagar(int valor, char *categoria, char *data){
 		res = PQexec(conn, select);
 		sprintf(limite,"%s",PQgetvalue(res, 0, 0));
 		if(valor > atoi(limite)){
-			printf("Limite insuficiente!!\nDeseja efetuar pagamento? [1 - SIM/0 - NAO] :"); //--------------SE O LIMITE É INSUFICIENTE TEM QUE PAGAR
+			printf("Limite insuficiente!! Deseja efetuar pagamento? [1 - SIM/0 - NAO]: ");
+			getchar();
 			scanf("%d", &pagar);
+			printf("%d", pagar);
 			if(pagar){
 				// Somar todos os valores ainda não pagos
 				sprintf(select, "SELECT valor FROM gasto WHERE pago = 0");
 				res = PQexec(conn, select);
-				while(PQgetisnull(res, j, 0)){
-					total = atoi(PQgetvalue(res, j, 0));
-					j++;
+				rows = PQntuples(res);
+				printf("%d", rows);
+				for(j=0; j<rows; j++){
+					total += atoi(PQgetvalue(res, j, 0));
 				}
-				printf("Divida %d", total);
+				printf("Divida %lf", total);
 				// Verifica se o valor a_pagar é menor ou igual ao saldo disponivel
 				sprintf(select, "SELECT saldo FROM conta WHERE pessoa_idpessoa = '%s'", id_usr);
 				res = PQexec(conn, select);
@@ -667,13 +671,13 @@ void user_pagar(int valor, char *categoria, char *data){
 					printf("Você não tem saldo suficiente! Favor faca um deposito\n");
 				else{
 					// Se o usuario tiver saldo, subtrai o valor do pagamento
-					sprintf(update, "UDPATE conta SET (\"saldo\") = (\"saldo\")-%d WHERE pessoa_idpessoa = '%s'", total, id_usr);
+					sprintf(update, "UDPATE conta SET saldo=saldo-%.2lf WHERE pessoa_idpessoa = '%s'", total, id_usr);
 					res = PQexec(conn, update);
 					if(PQresultStatus(res) != PGRES_COMMAND_OK){
 						do_exit(conn, res);
 					}else{
 						printf("Pagamento efetuado ====== OK\n");
-						sprintf(update, "UPDATE conta SET (\"limite\") = (\"limite\")+%d WHERE pessoa_idpessoa = '%s'", total, id_usr);
+						sprintf(update, "UPDATE conta SET limite=limite+%.2lf WHERE pessoa_idpessoa = '%s'", total, id_usr);
 						res = PQexec(conn, update);
 						if(PQresultStatus(res) != PGRES_COMMAND_OK){
 							do_exit(conn, res);
@@ -693,7 +697,7 @@ void user_pagar(int valor, char *categoria, char *data){
 			}
 		}else{
 			// Se tiver limite, faz o update do limtie
-			sprintf(update, "UPDATE conta SET (\"limite\") = (\"limite\")-%d WHERE pessoa_idpessoa = '%s'", valor, id_usr);
+			sprintf(update, "UPDATE conta SET limite=limite-%d WHERE pessoa_idpessoa = '%s'", valor, id_usr);
 			res = PQexec(conn, update);
 			if(PQresultStatus(res) != PGRES_COMMAND_OK){
 				do_exit(conn, res);
@@ -730,7 +734,7 @@ void saque(int valor){
 			printf("Saldo insuficiente!");
 		}else{
 			// Se tiver saldo, efetua o saque
-			sprintf(update, "UPDATE conta SET (\"saldo\")=(\"saldo\")-%d WHERE pessoa_idpessoa = '%s'", valor, id_usr);
+			sprintf(update, "UPDATE conta SET saldo=saldo-%d WHERE pessoa_idpessoa = '%s'", valor, id_usr);
 			res = PQexec(conn, update);
 			if(PQresultStatus(res) != PGRES_COMMAND_OK){
 				do_exit(conn, res);
@@ -748,7 +752,7 @@ void deposito(int valor){
 		PGresult *res;
 		char update[500];
 		// Efetua o update do usuario
-		sprintf(update, "UPDATE conta SET (\"saldo\")=(\"saldo\")+%d WHERE pessoa_idpessoa = '%s'", valor, id_usr);
+		sprintf(update, "UPDATE conta SET saldo=saldo+%d WHERE pessoa_idpessoa = '%s'", valor, id_usr);
 		res = PQexec(conn, update);
 		if(PQresultStatus(res) != PGRES_COMMAND_OK){
 			do_exit(conn, res);
