@@ -161,16 +161,16 @@ int comandos_user(int esc){
 				// Chama funcao que mostra informacoes do usuario
 				select_user(conn);
 				break;
-			case 3:
+			//case 3:
 				// Chama a funcao para edicao
-				select_pessoa(conn);
-				printf("\nInforme o ID que você quer editar (0 = CANCELAR): ");
-				scanf("%d",&up_id);
-				getchar();
-				system("clear");
-				if(up_id)
-					editar(conn, up_id);
-				break;
+			//	select_pessoa(conn);
+			//	printf("\nInforme o ID que você quer editar (0 = CANCELAR): ");
+			//	scanf("%d",&up_id);
+			//	getchar();
+			//	system("clear");
+			//	if(up_id)
+			//		editar(conn, up_id);
+			//	break;
 			case 4:
 				// Chama a funcao para saque
 				printf("Digite o valor para sacar: ");
@@ -650,9 +650,8 @@ void user_pagar(int valor, char *categoria, char *data){
 		sprintf(limite,"%s",PQgetvalue(res, 0, 0));
 		if(valor > atoi(limite)){
 			printf("Limite insuficiente!! Deseja efetuar pagamento? [1 - SIM/0 - NAO]: ");
-			getchar();
+			//getchar();
 			scanf("%d", &pagar);
-			printf("%d", pagar);
 			if(pagar){
 				// Somar todos os valores ainda não pagos
 				sprintf(select, "SELECT valor FROM gasto WHERE pago = 0");
@@ -667,11 +666,11 @@ void user_pagar(int valor, char *categoria, char *data){
 				sprintf(select, "SELECT saldo FROM conta WHERE pessoa_idpessoa = '%s'", id_usr);
 				res = PQexec(conn, select);
 				saldo = atoi(PQgetvalue(res, 0, 0));
-				if(total<=saldo)
+				if(total>saldo)
 					printf("Você não tem saldo suficiente! Favor faca um deposito\n");
 				else{
 					// Se o usuario tiver saldo, subtrai o valor do pagamento
-					sprintf(update, "UDPATE conta SET saldo=saldo-%.2lf WHERE pessoa_idpessoa = '%s'", total, id_usr);
+					sprintf(update, "UPDATE conta SET saldo=saldo-%.2lf WHERE pessoa_idpessoa = '%s'", total, id_usr);
 					res = PQexec(conn, update);
 					if(PQresultStatus(res) != PGRES_COMMAND_OK){
 						do_exit(conn, res);
