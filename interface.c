@@ -95,6 +95,7 @@ void user(){
 			case 3:
 			case 4:
 			case 5:
+			case 6:
 				system("clear");
 				comandos_user(escolha);
 				continua();
@@ -117,7 +118,7 @@ void user_menu(){
 	printf("+\t\tBEM-VINDO \"%s\"\n",nome_usr);
 	printf("+\t\tSISTEMA ANDERSON E JOÃO\n");
 	risco();
-	printf("+\tEscolha a opção:\n+\t1 - REALIZAR PAGAMENTO\n+\t2 - INFORMAÇÕES\n+\t3 - ATUALIZAR DADOS\n+\t4 - EFETUAR SAQUE\n+\t5 - EFETUAR DEPOSITO\n+\t0 - SAIR\n");
+	printf("+\tEscolha a opção:\n+\t1 - REALIZAR PAGAMENTO\n+\t2 - INFORMAÇÕES\n+\t3 - ATUALIZAR DADOS\n+\t4 - EFETUAR SAQUE\n+\t5 - EFETUAR DEPOSITO\n+\t6 - CONSULTAR GASTOS\n+\t0 - SAIR\n");
 	printf("+ ");
 }
 

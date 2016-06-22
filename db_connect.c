@@ -36,6 +36,7 @@ void select_user(PGconn *conn);
 void user_pagar(int valor, char *categoria, char *data);
 void saque(int valor);
 void deposito(int valor);
+void consGast(char *data_cons);
 // Para Edicao
 void editar(PGconn *conn, int receb);
 void tratamento(char *ent, int tam);
@@ -138,6 +139,7 @@ int comandos_user(int esc){
 	int del_id, up_id, ins_conta, valor;
 	char categoria[50];
 	char data[20];
+	char data_cons[10];
 	PGconn *conn = PQconnectdb(STR_CON);
 	if (PQstatus(conn) == CONNECTION_BAD) {
 		fprintf(stderr, "Connection to database failed: %s\n",PQerrorMessage(conn));
@@ -184,6 +186,12 @@ int comandos_user(int esc){
 				deposito(valor);
 				break;
 			case 6:
+				// Chama a funcao da consulta dos gastos
+				printf("Digite um mes e ano para consultar os gastos: [mm/yyyy]: ");
+				fgets(data_cons, 10, stdin);
+				consGast(data_cons);
+				break;
+			case 7:
 				// Chama funcao para apagar pessao
 				select_pessoa(conn);
 				printf("\nInforme o ID que você quer apagar (0 = CANCELAR): ");
@@ -657,7 +665,6 @@ void user_pagar(int valor, char *categoria, char *data){
 				sprintf(select, "SELECT valor FROM gasto WHERE pago = 0");
 				res = PQexec(conn, select);
 				rows = PQntuples(res);
-				printf("%d", rows);
 				for(j=0; j<rows; j++){
 					total += atoi(PQgetvalue(res, j, 0));
 				}
@@ -758,5 +765,24 @@ void deposito(int valor){
 		}else{
 			printf("Saque efetuado ====== OK\n");
 		}
+	}
+}
+
+// Funcao responsavel por retornar os gastos do mes
+void consGast(char *data_cons){
+	PGconn *conn = PQconnectdb(STR_CON);
+	if(PQstatus(conn) != CONNECTION_BAD){
+		char select[500];
+		int j, rows=0;
+		double total;
+		PGresult *res;
+		sprintf(select, "SELECT valor FROM gasto WHERE dia >= '01/%s' AND dia < '30/%s'", data_cons, data_cons);
+		res = PQexec(conn, select);
+		rows = PQntuples(res);
+		for(j=0; j<rows; j++){
+			printf("[%d] - %s\n", j, PQgetvalue(res, j, 0));
+			total += atoi(PQgetvalue(res, j, 0));
+		}
+		printf("Total = %.2lf\n", total);
 	}
 }
