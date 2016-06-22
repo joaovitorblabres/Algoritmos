@@ -12,10 +12,12 @@ int checa(char lvl){
 		return (1);
 }
 
+//Funcao responsavel por chamar as verificacoes de login
 int form_login(){
 	char usuario[100];
 	char senha[100];
 	int espera,i;
+	// Repete ate conseguir logar ou sair
 	do{	
 		acesso();
 		printf("Informe sua conta: ");
@@ -26,10 +28,12 @@ int form_login(){
 		senha[strlen(senha)-1] = '\0';
 		printf("Conectando\n");
 		sleep(1);
+		// Verifica se o usuario e senha digitados estao corretos
 		if(!login(usuario,senha)){
 			system("clear");
 			printf("Usuário ou senha incorretos\n");
 		}else{
+			// Verifica se o usuario é ROOT ou USUARIO COMUM
 			system("clear");
 			if(!checa(nv_login(usuario,senha)))
 				root();

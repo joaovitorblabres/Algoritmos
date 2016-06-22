@@ -42,9 +42,9 @@ CREATE TABLE gasto (
   idgasto SERIAL  NOT NULL ,
   categ_idcateg INTEGER   NOT NULL ,
   pessoa_idpessoa INTEGER   NOT NULL ,
-  lugar VARCHAR(50)   NOT NULL ,
   dia DATE   NOT NULL ,
   valor DOUBLE PRECISION   NOT NULL   ,
+  pago INTEGER   NOT NULL ,
 PRIMARY KEY(idgasto)    ,
   FOREIGN KEY(pessoa_idpessoa)
     REFERENCES pessoa(idpessoa),

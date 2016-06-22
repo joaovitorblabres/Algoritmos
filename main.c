@@ -5,6 +5,7 @@
 #include "login.c"
 
 int main(){
+	// Chama o form inicial 
 	system("clear");
 	form_login();
 }

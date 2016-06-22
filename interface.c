@@ -13,6 +13,7 @@ void acesso();
 void campos_edicao();
 void nome();
 
+// Imprimir desenho
 void acesso(){
 	printf("\t\t  _   _   _   _   _   _   \n"); 
 	printf("\t\t / \\ / \\ / \\ / \\ / \\ / \\  \n");
@@ -24,7 +25,8 @@ void acesso(){
 char nome_usr[500];
 void nome(){
 	char select[500];
-	PGconn *conn = PQconnectdb(STR_CON); //cria conexão com banco de dados
+	// Criar conexão com banco de dados
+	PGconn *conn = PQconnectdb(STR_CON); 
 	PGresult *res;
 	sprintf(select,"SELECT primeiro_nome from pessoa where idPessoa = %s", id_usr);
 	res = PQexec(conn,select);
@@ -39,7 +41,7 @@ void risco(){
 }
 
 
-//-----------------------------------------------------------------------ROOT
+// Tela para o usuario ROOT
 void root_menu(){
 	printf("+\tROOT - SISTEMA ANDERSON E JOÃO\n");
 	risco();
@@ -54,6 +56,7 @@ void campos_edicao(){
 	printf("+ ");
 }
 
+// Escolha para o usario ROOT
 void root(){
 	root_menu();
 	int escolha;
@@ -80,7 +83,7 @@ void root(){
 	}
 }
 
-//-----------------------------------------------------------------------USER COMUM
+// Escolha para USUARIO COMUM
 void user(){
 	user_menu();
 	int escolha;
@@ -90,6 +93,8 @@ void user(){
 			case 1:
 			case 2:
 			case 3:
+			case 4:
+			case 5:
 				system("clear");
 				comandos_user(escolha);
 				continua();
@@ -106,12 +111,13 @@ void user(){
 	}
 }
 
+// Tela para USUARIO COMUM
 void user_menu(){
 	nome();
 	printf("+\t\tBEM-VINDO \"%s\"\n",nome_usr);
 	printf("+\t\tSISTEMA ANDERSON E JOÃO\n");
 	risco();
-	printf("+\tEscolha a opção:\n+\t1 - REALIZAR PAGAMENTO\n+\t2 - INFORMAÇÕES\n+\t3 - ATUALIZAR DADOS\n+\t0 - SAIR\n");
+	printf("+\tEscolha a opção:\n+\t1 - REALIZAR PAGAMENTO\n+\t2 - INFORMAÇÕES\n+\t3 - ATUALIZAR DADOS\n+\t4 - EFETUAR SAQUE\n+\t5 - EFETUAR DEPOSITO\n+\t0 - SAIR\n");
 	printf("+ ");
 }
 

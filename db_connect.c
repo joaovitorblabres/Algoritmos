@@ -4,12 +4,14 @@
 #include <libpq-fe.h>
 #define STR_CON "user=postgres password=postgres dbname=NuBank"
 
+// Definicao da struct pessoa
 struct pessoa{
 	char primeiro_nome[100];
 	char ultimo_nome[100];
 	char CPF[100];
 };
 
+// Definicao da struct conta
 struct conta{
 	int numero;
 	char senha[100];
@@ -18,58 +20,58 @@ struct conta{
 	int nivel_acesso;
 };
 
-// Grava o fodendo ID do fodendo Usuario
+// Grava o ID do Usuario
 char id_usr[10];
 char id[10];
 int idusr;
+// Assinatura de funcoes
+// Comandos comuns
 void do_exit(PGconn *conn, PGresult *res);
 int comandos_root(int esc);
 int comandos_user(int esc);
-
 void select_pessoa(PGconn *conn);
 void select_user(PGconn *conn);
-
-//
-void user_pagar(int valor, char *categoria);
-
-//edições
+// Para acoes do usuario
+void user_pagar(int valor, char *categoria, char *data);
+void saque(int valor);
+void deposito(int valor);
+// Para Edicao
 void editar(PGconn *conn, int receb);
 void tratamento(char *ent, int tam);
 int apagar(PGconn *conn, int receb);
 int verifica_conta(int);
-
-// declaração de login
+// Para Login
 int login(char *login, char *senha);
 char nv_login(char *login, char *senha);
-
-// declaração de funções para inserção
+// Para inserção
 int insert_pessoa(PGconn *conn, struct pessoa *dadosCliente, int *i);
 void form_include_usuario();
 void separa_nome(char *nome, int tamanho, struct pessoa *dadosCliente, int *l);
 int valida_cpf(char *cpf, int tamanho);
 int verifica_cpf(char *);
-
 void form_include_conta(int idpessoa);
 int insert_conta(PGconn *conn, struct conta *contas, int *i);
 void gera_numero(struct conta *contas, int *i);
 int verifica_numero(int);
-
 //tratamento de string para evitar sql injection
 void tratamento(char *ent, int tam){ 
 	int i;
 	for(i=0;i<tam;i++){
-		if(ent[i] == 39){ //verifica se contém aspas simples e substitui por espaço
+		// Verifica se contém aspas simples e substitui por espaço
+		if(ent[i] == 39){
 			ent[i] = 32;
 		}
 	}
 	for(i=0;i<tam;i++){
-		if(ent[i] == 59){ //verifica se contém ponto e virgula e substitui por espaço
+		// Verifica se contém ponto e virgula e substitui por espaço
+		if(ent[i] == 59){
 			ent[i] = 32;
 		}
 	}
 }
 
-void do_exit(PGconn *conn, PGresult *res) { //retorna erro de conexão
+// Funcao responsavel por retornar se houve erro de conexão com o banco de dados
+void do_exit(PGconn *conn, PGresult *res) {
     
     fprintf(stderr, "%s\n", PQerrorMessage(conn));    
 
@@ -79,7 +81,8 @@ void do_exit(PGconn *conn, PGresult *res) { //retorna erro de conexão
     exit(1);
 }
 
-int comandos_root(int esc){ //comandos
+// Comandos para usuario do tipo Root
+int comandos_root(int esc){
 	int del_id, up_id, ins_conta;
 	PGconn *conn = PQconnectdb(STR_CON);
 	if (PQstatus(conn) == CONNECTION_BAD) {
@@ -89,6 +92,7 @@ int comandos_root(int esc){ //comandos
 	}else{
 		switch(esc){
 			case 1:
+				// Chama funcao responsavel por inclusao de conta
 				form_include_usuario();
 				printf("\n+Deseja incluir uma conta (0=NAO | 1=SIM)? ");
 				scanf("%d",&ins_conta);
@@ -98,9 +102,11 @@ int comandos_root(int esc){ //comandos
 				}
 				break;
 			case 2:
+				// Chama funcao para mostrar informacoes do usuario
 				select_pessoa(conn);
 				break;
 			case 3:
+				// Chama funcao para editar usuarios
 				select_pessoa(conn);
 				printf("\nInforme o ID que você quer editar (0 = CANCELAR): ");
 				scanf("%d",&up_id);
@@ -110,6 +116,7 @@ int comandos_root(int esc){ //comandos
 					editar(conn, up_id);
 				break;
 			case 4:
+				// Chama funcao para apgar usuarios
 				select_pessoa(conn);
 				printf("\nInforme o ID que você quer apagar (0 = CANCELAR): ");
 				scanf("%d",&del_id);
@@ -125,8 +132,11 @@ int comandos_root(int esc){ //comandos
 	}
 }
 
-int comandos_user(int esc){ //comandos
-	int del_id, up_id, ins_conta;
+// Comandos possiveis do usuario
+int comandos_user(int esc){
+	int del_id, up_id, ins_conta, valor;
+	char categoria[50];
+	char data[20];
 	PGconn *conn = PQconnectdb(STR_CON);
 	if (PQstatus(conn) == CONNECTION_BAD) {
 		fprintf(stderr, "Connection to database failed: %s\n",PQerrorMessage(conn));
@@ -134,14 +144,24 @@ int comandos_user(int esc){ //comandos
 		return (0);
 	}else{
 		switch(esc){
-			case 1:		
+			case 1:
+				// Chama funcao responsavel por efetur pagamente por limite
 				system("clear");
-				user_pagar(1000, "Shopping");		
+				printf("+Informe o valor que deseja pagar: ");
+				scanf("%d", &valor);
+				getchar();
+				printf("+Informe a categoria do lugar: ");
+				fgets(categoria, 50, stdin);
+				printf("+Informe a data da compra: ");
+				fgets(data, 20, stdin);
+				user_pagar(valor, categoria, data);
 				break;
 			case 2:
+				// Chama funcao que mostra informacoes do usuario
 				select_user(conn);
 				break;
 			case 3:
+				// Chama a funcao para edicao
 				select_pessoa(conn);
 				printf("\nInforme o ID que você quer editar (0 = CANCELAR): ");
 				scanf("%d",&up_id);
@@ -151,6 +171,19 @@ int comandos_user(int esc){ //comandos
 					editar(conn, up_id);
 				break;
 			case 4:
+				// Chama a funcao para saque
+				printf("Digite o valor para sacar: ");
+				scanf("%d", &valor);
+				saque(valor);
+				break;
+			case 5:
+				// Chama a funcao para deposito
+				printf("Digite o valor para depositar: ");
+				scanf("%d", &valor);
+				deposito(valor);
+				break;
+			case 6:
+				// Chama funcao para apagar pessao
 				select_pessoa(conn);
 				printf("\nInforme o ID que você quer apagar (0 = CANCELAR): ");
 				scanf("%d",&del_id);
@@ -166,7 +199,8 @@ int comandos_user(int esc){ //comandos
 	}
 }
 
-void select_user(PGconn *conn){ // select para informações do usuário
+// Funcao responsavel por selecionar informacoes para o usuario
+void select_user(PGconn *conn){
 	char query[500];
 	sprintf(query,"SELECT * FROM pessoa full join conta on idpessoa = pessoa_idpessoa WHERE pessoa_idpessoa = %s",id_usr);
 	PGresult *res = PQexec(conn, query);
@@ -179,7 +213,8 @@ void select_user(PGconn *conn){ // select para informações do usuário
 	}
 }
 
-void select_pessoa(PGconn *conn){ // select para informações para o root
+// Funcao responsavel por buscar informações para o root
+void select_pessoa(PGconn *conn){ 
 	PGresult *res = PQexec(conn, "SELECT * FROM pessoa full join conta on idpessoa = pessoa_idpessoa ORDER BY idpessoa");    
 	int rows = PQntuples(res);
 	printf("+%*d registros encontrados:\n",3,rows);
@@ -191,7 +226,7 @@ void select_pessoa(PGconn *conn){ // select para informações para o root
 	}
 }
 
-//------------------------------------------------------------------------------------------apagar
+// Funcao responsavel por apagar usuarios
 int apagar(PGconn *conn, int receb){
 	if(PQstatus(conn) != CONNECTION_BAD){
 		char str_del[500];
@@ -209,8 +244,8 @@ int apagar(PGconn *conn, int receb){
 	}
 }
 
-//------------------------------------------------------------------------------------------editar
-void editar(PGconn *conn, int receb){ //edição do nome no banco de dados
+// Funcao responsavel por edicoes de usuario
+void editar(PGconn *conn, int receb){
 	if(PQstatus(conn) != CONNECTION_BAD){
 		char str_up[500];
 		char altera[500];
@@ -218,6 +253,7 @@ void editar(PGconn *conn, int receb){ //edição do nome no banco de dados
 		while(select_pessoa(conn),campos_edicao(),scanf("%d",&campo),campo){
 			getchar();
 			switch(campo){
+				// Edicao de nome
 				case 1:
 					printf("+ Escreva o novo Primeiro_Nome: \n+ ");
 					fgets(altera,500,stdin);
@@ -225,36 +261,41 @@ void editar(PGconn *conn, int receb){ //edição do nome no banco de dados
 					tratamento(altera,strlen(altera)); //trata strings
 					sprintf(str_up,"UPDATE pessoa SET \"primeiro_nome\" = '%s' WHERE idpessoa = %d", altera, receb);
 					break;
+				// Edicao de sobrenome
 				case 2:
 					printf("+ Escreva o novo Ultimo_Nome: \n+ ");
 					fgets(altera,500,stdin);
 					altera[strlen(altera)-1] = '\0';
-					tratamento(altera,strlen(altera)); //trata strings
+					tratamento(altera,strlen(altera));
 					sprintf(str_up,"UPDATE pessoa SET \"ultimo_nome\" = '%s' WHERE idpessoa = %d", altera, receb);
 					break;
+				// Edicao de senha
 				case 3:
 					while(printf("+ Informe a nova senha: \n+ "),fgets(altera,500,stdin),strlen(altera)-1>6){
 						printf("+ Quantidades de caracteres inválidos\n");
 					}
 					altera[strlen(altera)-1] = '\0';
-					tratamento(altera,strlen(altera)); //trata strings
+					tratamento(altera,strlen(altera));
 					sprintf(str_up,"UPDATE conta SET \"senha\" = '%s' WHERE pessoa_idpessoa = %d", altera, receb);
 					break;
+				// Edicao de limite
 				case 4:
 					printf("+ Informe o novo limite do usuário: \n+ ");
 					fgets(altera,500,stdin);
 					altera[strlen(altera)-1] = '\0';
-					tratamento(altera,strlen(altera)); //trata strings
+					tratamento(altera,strlen(altera));
 					sprintf(str_up,"UPDATE conta SET \"limite\" = '%s' WHERE pessoa_idpessoa = %d", altera, receb);
 					break;
+				// Edicao de nivel de acesso
 				case 5:
 					while(printf("+ Informe o novo nível de acesso: \n+ "),fgets(altera,500,stdin),altera[0]>50){
 						printf("+ Nível de acesso inválido\n");
 					}
 						altera[strlen(altera)-1] = '\0';
-						tratamento(altera,strlen(altera)); //trata strings
+						tratamento(altera,strlen(altera));
 						sprintf(str_up,"UPDATE conta SET \"nivel_acesso\" = '%s' WHERE pessoa_idpessoa = %d", altera, receb);
 					break;
+				// Edicao se a conta ja esta cadastrada
 				case 6:
 					if(!verifica_conta(receb)){
 						form_include_conta(receb);
@@ -262,6 +303,7 @@ void editar(PGconn *conn, int receb){ //edição do nome no banco de dados
 						printf("\n+ Usuário já possui conta cadastrada");
 					break;
 			}
+			// Checa se a edicao foi bem sucedida
 			PGresult *res = PQexec(conn, str_up);
 			if(PQresultStatus(res) != PGRES_COMMAND_OK){
 				system("clear");
@@ -274,7 +316,7 @@ void editar(PGconn *conn, int receb){ //edição do nome no banco de dados
 		}
 	}
 }
-//------------------------------------------------------------------------------------------verificação de conta
+// Funcao resopnsavel por verificar a conta
 int verifica_conta(int numero){
 	char sl_num[100], select[1000];
 	int num,i;
@@ -288,7 +330,8 @@ int verifica_conta(int numero){
 	else
 		return (0);	
 }
-//------------------------------------------------------------------------------------------verificação de login
+
+// Funcao responsavel por verificar o login
 int login(char *login, char *senha){ 
 	PGconn *conn = PQconnectdb(STR_CON);
 	char str_login[500];
@@ -301,6 +344,7 @@ int login(char *login, char *senha){
 		return (0);
 }
 
+// Funcao responsavel por pegar o nivel do ususario - Root/Comum
 char nv_login(char *login, char *senha){ 
 	PGconn *conn = PQconnectdb(STR_CON);
 	char str_login[500];
@@ -315,9 +359,10 @@ char nv_login(char *login, char *senha){
 	return (*lvl);
 }
 int i=0;
-//------------------------------------------------------------------------------------------inserção de usuários
-void form_include_usuario(){ // form para incluir usuários
-	PGconn *conn = PQconnectdb(STR_CON); //cria conexão com banco de dados
+// Funcao responsalve por inserir usuarios
+void form_include_usuario(){
+	// Cria conexão com banco de dados
+	PGconn *conn = PQconnectdb(STR_CON); 
 	char nome[500];
 	int ok = 0;
 	struct pessoa pessoas[1000];
@@ -347,7 +392,8 @@ void form_include_usuario(){ // form para incluir usuários
 	i++;
 }
 
-int verifica_cpf(char * cpf){ // verifica CPF ================== terminar
+// Funcao responsavel por verificar CPF
+int verifica_cpf(char * cpf){ 
 	char sl_num[100], select[1000];
 	int i,k =0,tamanho, ok, t=0, j;
 	int num[11], n_cpf[11];
@@ -391,7 +437,8 @@ int verifica_cpf(char * cpf){ // verifica CPF ================== terminar
 	return (t);
 }
 
-int insert_pessoa(PGconn *conn, struct pessoa *dadosCliente, int *i){ //inserção no banco de dados
+// Funcao responsavel por inserir pessoas no banco de dados
+int insert_pessoa(PGconn *conn, struct pessoa *dadosCliente, int *i){ 
 	if(PQstatus(conn) != CONNECTION_BAD){
 		PGresult *res;
 		char insert[500];
@@ -407,8 +454,8 @@ int insert_pessoa(PGconn *conn, struct pessoa *dadosCliente, int *i){ //inserç�
 		return (1);
 	}
 }
-
-void form_include_conta(int idpessoa){ //form para incluir conta
+// Form para incluisao da conta
+void form_include_conta(int idpessoa){ 
 	int i=0;
 	char nome[100], select[1000];
 	struct conta contas[1000];
@@ -446,7 +493,8 @@ void form_include_conta(int idpessoa){ //form para incluir conta
 
 }
 
-int verifica_numero(int numero){ // verifica numero da conta
+// Funcao responsavel por verificar numero da conta
+int verifica_numero(int numero){ 
 	char sl_num[100], select[1000];
 	int num,i;
 	PGconn *conn = PQconnectdb(STR_CON);
@@ -464,8 +512,8 @@ int verifica_numero(int numero){ // verifica numero da conta
 	}
 	return (1);	
 }
-
-int insert_conta(PGconn *conn, struct conta *contas, int *i){ //inserção de conta no banco de dados
+// Funcao responsavel por inserir dados de conta no banco de dados
+int insert_conta(PGconn *conn, struct conta *contas, int *i){ 
 	if(PQstatus(conn) != CONNECTION_BAD){
 		PGresult *res;
 		char insert[500];
@@ -486,7 +534,11 @@ void gera_numero(struct conta *contas, int *i){
 	char strNum[5];
 	// Gera os 4 primeiros digitos aleatoriamente indo de 0 a 9
 	for(j=0; j<4; j++){
-		numRand[j] = rand() % 10;
+		// O primeiro numero nao armazena 0, entao soma 1
+		if(j==0)
+			numRand[j] = (rand() % 10)+1;
+		else
+			numRand[j] = rand() % 10;
 		// Gera o quinto digito multiplicando aleatorio*9 aleatorio*8...
 		quinto += numRand[j]*(9-j);
 	}
@@ -505,7 +557,7 @@ void gera_numero(struct conta *contas, int *i){
 	(*(contas+*i)).numero = numeroConta;
 }
 
-//------------------------------------------------------------------------------------------separa primeiro e ultimo nome
+//Funca responsavel por separar primeiro e ultimo nome
 void separa_nome(char *nome, int tamanho, struct pessoa *dadosCliente, int *l){
 	tratamento(nome,tamanho);
 	int i, k=0, pos_primeiro, pos_ultimo, cont=0;
@@ -536,6 +588,7 @@ void separa_nome(char *nome, int tamanho, struct pessoa *dadosCliente, int *l){
 	}
 }
 
+//Funcao responsavel por validar o CPF
 int valida_cpf(char *cpf, int tamanho){
 	int num[11],j,i,k=0, multiplica = 0, resto, verificador[2];
 	for(i=0;i<tamanho;i++){
@@ -561,22 +614,27 @@ int valida_cpf(char *cpf, int tamanho){
 		return (0);
 }
 
-void user_pagar(int valor, char *categoria){
+// Funcao responsavel por efetuar o pagamento de uma conta
+void user_pagar(int valor, char *categoria, char *data){
+	// Conexao do Postgres
 	PGconn *conn = PQconnectdb(STR_CON);
+	// Checa se a conexao foi bem sucedida
 	if(PQstatus(conn) != CONNECTION_BAD){
 		PGresult *res;
-		char insert[500], select[500], id_Cat[500], limite[6];
-		int escolha;
+		char insert[500], select[500], update[500], id_Cat[500], limite[6];
+		int escolha=0, pagar, j=0, id_Categ;
+		double total, saldo;
 		// Faz o insert da categoria - se nao existir
 		sprintf(select,"SELECT idCateg FROM categ WHERE nome = '%s'", categoria);
 		res = PQexec(conn,select);
+		// Se a categoria nao existir cria uma nova
 		if(PQgetisnull(res, 0, 0)){
 			system("clear");
-			printf("Deseja inserir uma nova categoria? [0 = NAO/1 = SIM]\n");
+			printf("Deseja inserir uma nova categoria? [0 = NAO/1 = SIM]: ");
 			scanf("%d", &escolha);
 			getchar();
 			if(escolha){
-				sprintf(insert,"INSERT INTO categ (\"nome\") VALUES('%s')", categoria);
+				sprintf(insert,"INSERT INTO categ (\"nome\") VALUES ('%s')", categoria);
 				res = PQexec(conn, insert);
 				if (PQresultStatus(res) != PGRES_COMMAND_OK){ 
 					do_exit(conn, res);
@@ -585,16 +643,117 @@ void user_pagar(int valor, char *categoria){
 				}
 			}
 		}
-		// Verifica se o ótario tem limite
+		// Verifica se o usuario tem limite
 		sprintf(select, "SELECT limite FROM conta WHERE pessoa_idpessoa = '%s'", id_usr);
 		res = PQexec(conn, select);
 		sprintf(limite,"%s",PQgetvalue(res, 0, 0));
 		if(valor > atoi(limite)){
-			printf("Limite insuficiente, favor, pague suas contas\n");
+			printf("Limite insuficiente!!\nDeseja efetuar pagamento? [1 - SIM/0 - NAO] :"); //--------------SE O LIMITE É INSUFICIENTE TEM QUE PAGAR
+			scanf("%d", &pagar);
+			if(pagar){
+				// Somar todos os valores ainda não pagos
+				sprintf(select, "SELECT valor FROM gasto WHERE pago = 0");
+				res = PQexec(conn, select);
+				while(PQgetisnull(res, j, 0)){
+					total = atoi(PQgetvalue(res, j, 0));
+					j++;
+				}
+				printf("Divida %d", total);
+				// Verifica se o valor a_pagar é menor ou igual ao saldo disponivel
+				sprintf(select, "SELECT saldo FROM conta WHERE pessoa_idpessoa = '%s'", id_usr);
+				res = PQexec(conn, select);
+				saldo = atoi(PQgetvalue(res, 0, 0));
+				if(total<=saldo)
+					printf("Você não tem saldo suficiente! Favor faca um deposito\n");
+				else{
+					// Se o usuario tiver saldo, subtrai o valor do pagamento
+					sprintf(update, "UDPATE conta SET (\"saldo\") = (\"saldo\")-%d WHERE pessoa_idpessoa = '%s'", total, id_usr);
+					res = PQexec(conn, update);
+					if(PQresultStatus(res) != PGRES_COMMAND_OK){
+						do_exit(conn, res);
+					}else{
+						printf("Pagamento efetuado ====== OK\n");
+						sprintf(update, "UPDATE conta SET (\"limite\") = (\"limite\")+%d WHERE pessoa_idpessoa = '%s'", total, id_usr);
+						res = PQexec(conn, update);
+						if(PQresultStatus(res) != PGRES_COMMAND_OK){
+							do_exit(conn, res);
+						}else{
+							printf("Limite atualizado ====== OK\n");
+						}
+						// Marca as contas que já foram pagas
+						sprintf(update, "UPDATE gasto SET pago=1 WHERE pessoa_idpessoa = '%s'", id_usr);
+						res = PQexec(conn, update);
+						if(PQresultStatus(res) != PGRES_COMMAND_OK){
+							do_exit(conn, res);
+						}else{
+							printf("Contas pagas ====== OK\n");
+						}
+					}
+				}
+			}
 		}else{
-			//Fazer tirar do limite, salvar no banco o novo limite, quando o cara pagar, somar o total de gastos com o que sobrou no campo limite e atualizar
-			//Para o limite voltar ao valor salvo
+			// Se tiver limite, faz o update do limtie
+			sprintf(update, "UPDATE conta SET (\"limite\") = (\"limite\")-%d WHERE pessoa_idpessoa = '%s'", valor, id_usr);
+			res = PQexec(conn, update);
+			if(PQresultStatus(res) != PGRES_COMMAND_OK){
+				do_exit(conn, res);
+			}else{
+				printf("Pagamento no credito ====== OK\n");
+			}
+			// Pega o id da categoria
+			sprintf(select, "SELECT idcateg FROM categ WHERE nome = '%s'", categoria);
+			res = PQexec(conn, select);
+			id_Categ = atoi(PQgetvalue(res, 0, 0));
+			// Cadastra que a pesoa gastou um valor naquela categoria
+			sprintf(insert, "INSERT INTO gasto (\"categ_idcateg\",\"pessoa_idpessoa\",\"dia\",\"valor\",\"pago\") VALUES('%d','%s','%s','%d','0')", id_Categ, id_usr, data, valor);
+			res = PQexec(conn, insert);
+			if(PQresultStatus(res) != PGRES_COMMAND_OK){
+				do_exit(conn, res);
+			}else{
+				printf("Gasto cadastrado ====== OK\n");
+			}
 		}
 		PQclear(res);
+	}
+}
+
+// Funcao responsavel por efetuar um saque
+void saque(int valor){
+	PGconn *conn = PQconnectdb(STR_CON);
+	if(PQstatus(conn) != CONNECTION_BAD){
+		PGresult *res;
+		char select[500], update[500];
+		// Verifica se o usuario tem saldo para sacar
+		sprintf(select, "SELECT saldo FROM conta WHERE pessoa_idpessoa = '%s'", id_usr);
+		res = PQexec(conn, select);
+		if(valor>atoi(PQgetvalue(res, 0, 0))){
+			printf("Saldo insuficiente!");
+		}else{
+			// Se tiver saldo, efetua o saque
+			sprintf(update, "UPDATE conta SET (\"saldo\")=(\"saldo\")-%d WHERE pessoa_idpessoa = '%s'", valor, id_usr);
+			res = PQexec(conn, update);
+			if(PQresultStatus(res) != PGRES_COMMAND_OK){
+				do_exit(conn, res);
+			}else{
+				printf("Saque efetuado ====== OK\n");
+			}
+		}
+	}
+}
+
+// Funcao responsavel por efetuar um deposito
+void deposito(int valor){
+	PGconn *conn = PQconnectdb(STR_CON);
+	if(PQstatus(conn) != CONNECTION_BAD){
+		PGresult *res;
+		char update[500];
+		// Efetua o update do usuario
+		sprintf(update, "UPDATE conta SET (\"saldo\")=(\"saldo\")+%d WHERE pessoa_idpessoa = '%s'", valor, id_usr);
+		res = PQexec(conn, update);
+		if(PQresultStatus(res) != PGRES_COMMAND_OK){
+			do_exit(conn, res);
+		}else{
+			printf("Saque efetuado ====== OK\n");
+		}
 	}
 }
