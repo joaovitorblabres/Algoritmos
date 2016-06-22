@@ -1,8 +1,6 @@
---usar banco de dados direto do terminal
+CREATE DATABASE "NuBank";
 
-CREATE DATABASE NuBank;
-
-\c nubank
+\c "NuBank"
 
 CREATE TABLE pessoa (
   idpessoa SERIAL  NOT NULL ,

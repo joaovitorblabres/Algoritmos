@@ -99,6 +99,7 @@ void user(){
 				system("clear");
 				comandos_user(escolha);
 				continua();
+				sleep(2);
 				system("clear");
 				user_menu();
 				break;

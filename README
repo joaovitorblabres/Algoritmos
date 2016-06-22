@@ -1,1 +1,4 @@
-Terminar a gastos - Amanha eu termino, nao esquenta com essa
+Criar banco de dados com usuário: postgres | senha: postgres
+Acessar banco de dados e colar no terminal o conteúdo do arquivo NuBank.sql
+Para compilar: gcc -o main main.c -I/usr/include/postgresql -lpq -std=c99 -w
+Para executar: ./main

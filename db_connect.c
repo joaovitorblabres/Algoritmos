@@ -155,8 +155,10 @@ int comandos_user(int esc){
 				getchar();
 				printf("+Informe a categoria do lugar: ");
 				fgets(categoria, 50, stdin);
+				categoria[strlen(categoria)-1] = '\0';
 				printf("+Informe a data da compra: ");
 				fgets(data, 20, stdin);
+				data[strlen(data)-1] = '\0';
 				user_pagar(valor, categoria, data);
 				break;
 			case 2:
@@ -434,7 +436,6 @@ int verifica_cpf(char * cpf){
 				}
 				if(ok==11){
 					t++;
-					printf("%d - %d - ok %d - t %d\n",n_cpf[j],num[j],ok,t);
 					break;
 				}
 			}
@@ -478,6 +479,7 @@ void form_include_conta(int idpessoa){
 	do{
 		gera_numero(contas,&i);
 	}while(!verifica_numero(contas[i].numero));
+	printf("+O numero da conta é \"%d\"\n" ,contas[i].numero);
 	do{
 		printf("+Informe uma senha (até 6 caracteres) para o usuário \"%s\": ",nome);
 		fgets(contas[i].senha,100,stdin);
@@ -537,16 +539,18 @@ int insert_conta(PGconn *conn, struct conta *contas, int *i){
 	}
 }	
 
-//------------------------------------------------------------------------------------------gera numero da conta
+// Funcao resposavel por gerar numero da conta
 void gera_numero(struct conta *contas, int *i){ 
 	int numRand[5], j, quinto=0, numeroConta=0;
 	char strNum[5];
 	// Gera os 4 primeiros digitos aleatoriamente indo de 0 a 9
 	for(j=0; j<4; j++){
 		// O primeiro numero nao armazena 0, entao soma 1
-		if(j==0)
-			numRand[j] = (rand() % 10)+1;
-		else
+		if(j==0){
+			numRand[j] = (rand() % 10);
+			if(numRand[j] == 0)
+				numRand[j] = 1;
+		}else
 			numRand[j] = rand() % 10;
 		// Gera o quinto digito multiplicando aleatorio*9 aleatorio*8...
 		quinto += numRand[j]*(9-j);
@@ -562,7 +566,6 @@ void gera_numero(struct conta *contas, int *i){
 	sprintf(strNum, "%d%d%d%d%d", numRand[0], numRand[1], numRand[2], numRand[3], numRand[4]);
 	// Converte o valor para int
 	numeroConta = atoi(strNum);
-	printf("+O numero da conta é \"%d\"\n" , numeroConta);
 	(*(contas+*i)).numero = numeroConta;
 }
 
@@ -640,7 +643,6 @@ void user_pagar(int valor, char *categoria, char *data){
 		if(PQgetisnull(res, 0, 0)){
 			system("clear");
 			printf("Deseja inserir uma nova categoria? [0 = NAO/1 = SIM]: ");
-			getchar();
 			scanf("%d", &escolha);
 			if(escolha){
 				sprintf(insert,"INSERT INTO categ (\"nome\") VALUES ('%s')", categoria);
@@ -658,7 +660,6 @@ void user_pagar(int valor, char *categoria, char *data){
 		sprintf(limite,"%s",PQgetvalue(res, 0, 0));
 		if(valor > atoi(limite)){
 			printf("Limite insuficiente!! Deseja efetuar pagamento? [1 - SIM/0 - NAO]: ");
-			//getchar();
 			scanf("%d", &pagar);
 			if(pagar){
 				// Somar todos os valores ainda não pagos
@@ -668,13 +669,13 @@ void user_pagar(int valor, char *categoria, char *data){
 				for(j=0; j<rows; j++){
 					total += atoi(PQgetvalue(res, j, 0));
 				}
-				printf("Divida %lf", total);
+				printf("Divida %.2lf\n", total);
 				// Verifica se o valor a_pagar é menor ou igual ao saldo disponivel
 				sprintf(select, "SELECT saldo FROM conta WHERE pessoa_idpessoa = '%s'", id_usr);
 				res = PQexec(conn, select);
 				saldo = atoi(PQgetvalue(res, 0, 0));
 				if(total>saldo)
-					printf("Você não tem saldo suficiente! Favor faca um deposito\n");
+					printf("\nVocê não tem saldo suficiente! Favor faca um deposito\n");
 				else{
 					// Se o usuario tiver saldo, subtrai o valor do pagamento
 					sprintf(update, "UPDATE conta SET saldo=saldo-%.2lf WHERE pessoa_idpessoa = '%s'", total, id_usr);
@@ -763,7 +764,7 @@ void deposito(int valor){
 		if(PQresultStatus(res) != PGRES_COMMAND_OK){
 			do_exit(conn, res);
 		}else{
-			printf("Saque efetuado ====== OK\n");
+			printf("Deposito efetuado ====== OK\n");
 		}
 	}
 }
@@ -776,13 +777,14 @@ void consGast(char *data_cons){
 		int j, rows=0;
 		double total;
 		PGresult *res;
-		sprintf(select, "SELECT valor FROM gasto WHERE dia >= '01/%s' AND dia < '30/%s'", data_cons, data_cons);
+		printf("ID  |  Categoria |  Valor\n");
+		sprintf(select, "SELECT nome, sum(valor) FROM categ left join gasto on categ.idcateg = gasto.categ_idcateg WHERE dia >= '01/%s' AND dia < '30/%s' AND pessoa_idpessoa = '%s' group by idcateg", data_cons, data_cons, id_usr);
 		res = PQexec(conn, select);
 		rows = PQntuples(res);
 		for(j=0; j<rows; j++){
-			printf("[%d] - %s\n", j, PQgetvalue(res, j, 0));
-			total += atoi(PQgetvalue(res, j, 0));
+			printf("[%d] - %10s - %6s\n", j+1, PQgetvalue(res, j, 0),PQgetvalue(res, j, 1));
+			total += atoi(PQgetvalue(res, j, 1));
 		}
-		printf("Total = %.2lf\n", total);
+		printf("Total = %.2lf\n\n", total);
 	}
 }
